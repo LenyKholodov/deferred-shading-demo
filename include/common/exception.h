@@ -26,4 +26,7 @@ class Exception: public std::exception
     std::shared_ptr<Impl> impl;
 };
 
+/// Create null argument exception
+Exception make_null_argument_exception(const char* param_name);
+
 }}

@@ -44,10 +44,11 @@ void vprintf(LogLevel log_level, const LogContext* context, const char* format, 
 
   char time_buffer[128];  
   timeval current_time;
-  int milliseconds = current_time.tv_usec / 1000;
 
-  gettimeofday(&current_time, nullptr);  
-  strftime(time_buffer, sizeof time_buffer, "%F %R", localtime(&current_time.tv_sec));
+  gettimeofday(&current_time, nullptr);    
+  strftime(time_buffer, sizeof time_buffer, "%F %T", localtime(&current_time.tv_sec));
+
+  unsigned int milliseconds = ((unsigned int)(current_time.tv_usec % 1000000)) / 1000;  
 
   const char* log_level_string = get_log_level_string(log_level);
 
@@ -58,7 +59,7 @@ void vprintf(LogLevel log_level, const LogContext* context, const char* format, 
     engine::common::xsnprintf(location_buffer, sizeof location_buffer, "%s(%d)", context->function, context->line);
   }
 
-  fprintf(stderr, "%s.%03d [%5s] %30s: ", time_buffer, milliseconds, log_level_string, location_buffer);
+  fprintf(stderr, "%s.%03u [%5s] %30s: ", time_buffer, milliseconds, log_level_string, location_buffer);
   vfprintf(stderr, format, args);
   fprintf(stderr, "\n");
   fflush(stderr);

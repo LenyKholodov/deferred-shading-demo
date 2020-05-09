@@ -1,4 +1,7 @@
+#include <application/application.h>
+#include <application/window.h>
 #include <common/exception.h>
+#include <common/log.h>
 
 extern "C"
 {
@@ -13,6 +16,7 @@ extern "C"
 #include <stdio.h>
 
 using namespace engine::common;
+using namespace engine::application;
 
 static const struct
 {
@@ -45,50 +49,19 @@ static const char* fragment_shader_text =
 "    gl_FragColor = vec4(color, 1.0);\n"
 "}\n";
 
-static void error_callback(int error, const char* description)
-{
-    fprintf(stderr, "Error: %s\n", description);
-}
-
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-}
-
 int main(void)
 {
-    GLFWwindow* window;
+  try
+  {
+    engine_log_info("Application has been started");
+
+    Application app;
+    Window window("Render test", 800, 600);
+
     GLuint vertex_buffer, vertex_shader, fragment_shader, program;
     GLint mvp_location, vpos_location, vcol_location;
 
-    glfwSetErrorCallback(error_callback);
-
-    try
-    {
-      throw Exception::format("my_exception_text");
-    }
-    catch (std::exception& e)
-    {
-      printf("%s\n", e.what());
-    }
-
-    if (!glfwInit())
-        exit(EXIT_FAILURE);
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-
-    window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
-    if (!window)
-    {
-        glfwTerminate();
-        exit(EXIT_FAILURE);
-    }
-
-    glfwSetKeyCallback(window, key_callback);
-
-    glfwMakeContextCurrent(window);
+    glfwMakeContextCurrent(window.handle());
     gladLoadGL(glfwGetProcAddress);
     glfwSwapInterval(1);
 
@@ -122,33 +95,62 @@ int main(void)
     glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
                           sizeof(vertices[0]), (void*) (sizeof(float) * 2));
 
-    while (!glfwWindowShouldClose(window))
-    {
-        float ratio;
-        int width, height;
-        mat4x4 m, p, mvp;
+    window.set_keyboard_handler([&](Key key, bool pressed) {
+      if (key == Key_Escape && pressed)
+      {
+        engine_log_info("Escape pressed. Exiting...");
+        window.close();
+      }
+    });
 
-        glfwGetFramebufferSize(window, &width, &height);
-        ratio = width / (float) height;
+    window.set_mouse_move_handler([&](double x, double y) {
+      double relative_x = x / window.width();
+      double relative_y = y / window.height();
 
-        glViewport(0, 0, width, height);
-        glClear(GL_COLOR_BUFFER_BIT);
+      engine_log_info("mouse move pos=(%.1f, %.1f) <-> (%.2f, %.2f)", x, y, relative_x, relative_y);
+    });
 
-        mat4x4_identity(m);
-        mat4x4_rotate_Z(m, m, (float) glfwGetTime());
-        mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-        mat4x4_mul(mvp, p, m);
+    window.set_mouse_button_handler([&](MouseButton button, bool pressed) {
+      engine_log_info("mouse button=%d pressed=%d", button, pressed);
+    });
 
-        glUseProgram(program);
-        glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+    app.main_loop([&](){
+      if (window.should_close())
+        app.exit();
 
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
+      float ratio;
+      int width, height;
+      mat4x4 m, p, mvp;
 
-    glfwDestroyWindow(window);
+      glfwGetFramebufferSize(window.handle(), &width, &height);
+      ratio = width / (float) height;
 
-    glfwTerminate();
-    exit(EXIT_SUCCESS);
+      glViewport(0, 0, width, height);
+      glClear(GL_COLOR_BUFFER_BIT);
+
+      mat4x4_identity(m);
+      mat4x4_rotate_Z(m, m, (float) glfwGetTime());
+      mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+      mat4x4_mul(mvp, p, m);
+
+      glUseProgram(program);
+      glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp);
+      glDrawArrays(GL_TRIANGLES, 0, 3);
+
+      window.swap_buffers();
+
+      static const size_t TIMEOUT_MS = 20;
+
+      return TIMEOUT_MS;
+    });
+
+    engine_log_info("Exiting from application...");
+
+    return 0;
+  }
+  catch (std::exception& e)
+  {
+    engine_log_fatal("%s\n", e.what());
+    return 1;
+  }
 }

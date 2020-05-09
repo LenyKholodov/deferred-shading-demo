@@ -26,6 +26,9 @@
 		B3AD1F2D2464354100730E61 /* egl_context.c in Sources */ = {isa = PBXBuildFile; fileRef = B3AD1F2C2464354100730E61 /* egl_context.c */; };
 		B3AD1F3524644C6100730E61 /* string.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3AD1F3324644C6100730E61 /* string.cpp */; };
 		B3AD1F3624644C6100730E61 /* exception.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3AD1F3424644C6100730E61 /* exception.cpp */; };
+		B3AD1F3924645A2900730E61 /* application.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3AD1F3824645A2900730E61 /* application.cpp */; };
+		B3AD1F3B2464634C00730E61 /* log.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3AD1F3A2464634C00730E61 /* log.cpp */; };
+		B3AD1F3D246471FF00730E61 /* window.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3AD1F3C246471FF00730E61 /* window.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,6 +52,9 @@
 		B3AD1F2C2464354100730E61 /* egl_context.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = egl_context.c; path = "../../../third-party/glfw/src/egl_context.c"; sourceTree = "<group>"; };
 		B3AD1F3324644C6100730E61 /* string.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = string.cpp; path = ../../common/string.cpp; sourceTree = "<group>"; };
 		B3AD1F3424644C6100730E61 /* exception.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = exception.cpp; path = ../../common/exception.cpp; sourceTree = "<group>"; };
+		B3AD1F3824645A2900730E61 /* application.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = application.cpp; path = ../../application/application.cpp; sourceTree = "<group>"; };
+		B3AD1F3A2464634C00730E61 /* log.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = log.cpp; path = ../../common/log.cpp; sourceTree = "<group>"; };
+		B3AD1F3C246471FF00730E61 /* window.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = window.cpp; path = ../../application/window.cpp; sourceTree = "<group>"; };
 		B3BD9F24246426BB005E8225 /* TestTask.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestTask.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -122,15 +128,26 @@
 		B3AD1F3124644C4400730E61 /* common */ = {
 			isa = PBXGroup;
 			children = (
+				B3AD1F3A2464634C00730E61 /* log.cpp */,
 				B3AD1F3424644C6100730E61 /* exception.cpp */,
 				B3AD1F3324644C6100730E61 /* string.cpp */,
 			);
 			name = common;
 			sourceTree = "<group>";
 		};
+		B3AD1F37246459F800730E61 /* application */ = {
+			isa = PBXGroup;
+			children = (
+				B3AD1F3C246471FF00730E61 /* window.cpp */,
+				B3AD1F3824645A2900730E61 /* application.cpp */,
+			);
+			name = application;
+			sourceTree = "<group>";
+		};
 		B3BD9F1B246426BB005E8225 = {
 			isa = PBXGroup;
 			children = (
+				B3AD1F37246459F800730E61 /* application */,
 				B3AD1F3124644C4400730E61 /* common */,
 				B3AD1EF92464310A00730E61 /* launcher */,
 				B3AD1EF6246430F400730E61 /* third-party */,
@@ -213,14 +230,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B3AD1F3924645A2900730E61 /* application.cpp in Sources */,
 				B3AD1F3524644C6100730E61 /* string.cpp in Sources */,
 				B3AD1F242464319B00730E61 /* cocoa_init.m in Sources */,
 				B3AD1F222464319B00730E61 /* init.c in Sources */,
 				B3AD1F3624644C6100730E61 /* exception.cpp in Sources */,
+				B3AD1F3D246471FF00730E61 /* window.cpp in Sources */,
 				B3AD1F192464319B00730E61 /* input.c in Sources */,
 				B3AD1F1B2464319B00730E61 /* nsgl_context.m in Sources */,
 				B3AD1F2B2464350100730E61 /* glad_gl.c in Sources */,
 				B3AD1F162464319B00730E61 /* osmesa_context.c in Sources */,
+				B3AD1F3B2464634C00730E61 /* log.cpp in Sources */,
 				B3AD1F252464319B00730E61 /* cocoa_window.m in Sources */,
 				B3AD1F1C2464319B00730E61 /* cocoa_time.c in Sources */,
 				B3AD1F182464319B00730E61 /* posix_thread.c in Sources */,

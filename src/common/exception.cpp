@@ -105,3 +105,16 @@ const char* Exception::what() const noexcept
 {
   return impl->message.c_str();
 }
+
+namespace engine {
+namespace common {
+
+Exception make_null_argument_exception(const char* param_name)
+{
+  if (!param_name)
+    param_name = "<unknown>";
+  
+  return Exception::format("Null argument '%s'", param_name);
+}
+
+}}
