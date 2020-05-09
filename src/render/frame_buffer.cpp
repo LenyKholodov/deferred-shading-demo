@@ -3,6 +3,11 @@
 using namespace engine::render;
 using namespace engine::common;
 
+///
+/// Constants
+///
+static constexpr size_t MAX_COLOR_TARGETS_COUNT = 8; //max number of color targets
+
 namespace
 {
 
@@ -18,11 +23,46 @@ enum RenderTargetType
 struct RenderTarget
 {
   RenderTargetType type; //type of the target
+  std::unique_ptr<Texture> texture; //texture
+  bool is_colored; //is this color render target
+  size_t mip_level; //mip level for rendering
+  TextureLevelInfo level_info; //texture level info
+  GLenum attachment; //attachment for this target
 
-  RenderTarget(RenderTargetType type, const Viewport& viewport)
-    : type(type)
+  RenderTarget()
+    : type(RenderTargetType_Window)
+    , is_colored(true)
+    , mip_level()
+    , attachment(GL_BACK) //TODO: front/back window buffer rendering support
   {
   }
+
+  RenderTarget(const Texture& in_texture, size_t layer, size_t mip_level, size_t render_target_index)
+    : type(RenderTargetType_Texture2D)
+    , is_colored()
+    , mip_level(mip_level)
+    , attachment()
+  {
+    engine_check_range(layer, in_texture.layers());
+    engine_check_range(mip_level, in_texture.mips_count());
+
+    switch (in_texture.format())
+    {
+      case PixelFormat_RGBA8:
+      case PixelFormat_RGB16F:
+        is_colored = true;
+        attachment = static_cast<GLenum>(GL_COLOR_ATTACHMENT0 + render_target_index);
+        break;
+      default:
+        engine_check(render_target_index == 0);
+        attachment = GL_DEPTH_ATTACHMENT;
+        break;
+    }
+
+    in_texture.get_level_info(layer, mip_level, level_info);
+
+    texture = std::make_unique<Texture>(in_texture);
+  }  
 };
 
 typedef std::vector<RenderTarget> RenderTargetArray;
@@ -34,15 +74,19 @@ struct FrameBuffer::Impl
 {
   DeviceContextPtr context; //device context
   GLuint frame_buffer_id; //identifier of frame buffer
-  math::vec4f clear_color; //clear color
-  RenderTargetArray render_targets; //rendering targets list
+  RenderTargetArray color_targets; //rendering targets list
+  std::unique_ptr<RenderTarget> depth_stencil_target; //depth-stencil target
   Viewport viewport; //viewport for the buffer (TODO: multi-target viewport support)  
+  bool need_reconfigure; //FBO needs to reconfigure
 
   Impl(const DeviceContextPtr& context, bool is_default)
     : context(context)
     , frame_buffer_id()
+    , need_reconfigure(false)
   {
     engine_check(context);
+
+    color_targets.reserve(MAX_COLOR_TARGETS_COUNT);
 
       //bind the context
 
@@ -52,24 +96,17 @@ struct FrameBuffer::Impl
 
     if (is_default)
     {
-      render_targets.emplace_back(RenderTarget(RenderTargetType_Window, get_default_viewport()));
+      color_targets.emplace_back(RenderTarget());
     }
     else
     {
-      glGenFramebuffers(1, &frame_buffer_id);
-    
-      if (!frame_buffer_id)
-        context->check_errors();
+      need_reconfigure = true;
     }
   }
 
   ~Impl()
   {
-    if (frame_buffer_id)
-    {
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
-      glDeleteFramebuffers(1, &frame_buffer_id);
-    }
+    destroy();
   }
 
   Viewport get_default_viewport() const
@@ -85,14 +122,109 @@ struct FrameBuffer::Impl
   {
     engine_check(context);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_id);
+    if (need_reconfigure)
+    {
+      reconfigure();
+    }
+    else
+    {
+      glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_id);
+    }
 
     context->check_errors();
   }
 
+  void destroy()
+  {
+    if (!frame_buffer_id)
+      return;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDeleteFramebuffers(1, &frame_buffer_id);
+
+    frame_buffer_id = 0;
+  }
+
   void reconfigure()
   {
-    unimplemented();
+    destroy();
+
+    if (color_targets.size() == 1 && color_targets.front().type == RenderTargetType_Window)
+    {
+      need_reconfigure = false;
+      return;
+    }
+
+    glGenFramebuffers(1, &frame_buffer_id);
+    
+    if (!frame_buffer_id)
+      throw Exception::format("FBO creation failed");
+
+    glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_id);  
+
+    try
+    {
+        //add color targets
+
+      for (auto& rt : color_targets)
+      {
+        switch (rt.type)
+        {
+          case RenderTargetType_Texture2D:
+          {
+            Texture& texture = *rt.texture;
+
+            engine_check(&texture);
+            engine_check(rt.is_colored);
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, rt.attachment, rt.level_info.target,
+              rt.level_info.texture_id, static_cast<GLint>(rt.mip_level));
+
+            break;
+          }
+          case RenderTargetType_Window:
+            throw Exception::format("Can't render both to window and texture simultaneously");
+          default:
+            unimplemented();
+        }
+      }
+
+        //check FBO status
+
+      GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
+      check_frame_buffer_status(status);
+
+      context->check_errors();
+    }
+    catch (...)
+    {
+      destroy();
+      throw;
+    }
+
+    need_reconfigure = false;
+  }
+
+  static void check_frame_buffer_status(GLenum status)
+  {
+    switch (status)
+    {
+      case GL_FRAMEBUFFER_COMPLETE:
+        break;
+      case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+        throw Exception::format("OpenGL bad framebuffer status: incomplete attachment");
+      case GL_FRAMEBUFFER_UNSUPPORTED:
+        throw Exception::format("OpenGL bad framebuffer status: unsupported framebuffer format");
+      case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+        throw Exception::format("OpenGL bad framebuffer status: missing attachment");
+      case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+        throw Exception::format("OpenGL bad framebuffer status: missing draw buffer");
+      case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
+        throw Exception::format("OpenGL bad framebuffer status: missing read buffer");
+      default:
+        throw Exception::format("OpenGL bad framebuffer status: 0x%04x", status);
+    }
   }
 };
 
@@ -107,11 +239,6 @@ FrameBuffer::FrameBuffer(const DeviceContextPtr& context, const Window& window)
   engine_check(context->handle() == window.handle());
 
   impl.reset(new Impl(context, true));
-}
-
-size_t FrameBuffer::render_targets_count() const
-{
-  return impl->render_targets.size();
 }
 
 void FrameBuffer::set_viewport(const Viewport& viewport)
@@ -129,41 +256,19 @@ void FrameBuffer::reset_viewport()
   }
   else
   {
-    unimplemented();
+    engine_check(impl->color_targets.size() > 0);
+
+    impl->bind(); //for reconfiguring
+
+    const RenderTarget& render_target = impl->color_targets.front();
+
+    impl->viewport = Viewport(0, 0, render_target.level_info.width, render_target.level_info.height);
   }
 }
 
 const Viewport& FrameBuffer::viewport() const
 {
   return impl->viewport;
-}
-
-void FrameBuffer::set_clear_color(const math::vec4f& color)
-{
-  impl->clear_color = color;
-}
-
-const math::vec4f& FrameBuffer::clear_color() const
-{
-  return impl->clear_color;
-}
-
-void FrameBuffer::clear(unsigned int flags)
-{
-  impl->bind();
-
-  GLuint gl_flags = 0;
-
-  if (flags & ClearFlag_Color)   gl_flags |= GL_COLOR_BUFFER_BIT;
-  if (flags & ClearFlag_Depth)   gl_flags |= GL_DEPTH_BUFFER_BIT;
-  if (flags & ClearFlag_Stencil) gl_flags |= GL_STENCIL_BUFFER_BIT;
-
-  const math::vec4f& clear_color = impl->clear_color;
-
-  glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-  glClear(gl_flags);
-
-  impl->context->check_errors();
 }
 
 void FrameBuffer::bind()
@@ -175,7 +280,7 @@ void FrameBuffer::bind()
   if (!impl->frame_buffer_id)
   {
       //reset viewport each time for window based render target, because window size can change
-      //TODO: cacheing
+      //TODO: caching
 
     reset_viewport();
   }
@@ -184,5 +289,77 @@ void FrameBuffer::bind()
 
   glViewport(v.x, v.y, v.width, v.height);
 
+    //configure MRT
+
+  unsigned int attachments[MAX_COLOR_TARGETS_COUNT];
+  unsigned int attachments_count = 0;
+
+  for (const auto& rt : impl->color_targets)
+  {
+    attachments[attachments_count++] = rt.attachment;
+  }
+
+  printf("attachments_count=%d\n", attachments_count);
+
+  switch (attachments_count)
+  {
+    case 0:
+      glDrawBuffer(GL_NONE);
+      break;
+    case 1:
+      glDrawBuffer(attachments[0]);
+      break;
+    default:
+      glDrawBuffers(attachments_count, attachments);
+      break;
+  }
+
+    //check errors
+
   impl->context->check_errors();
+}
+
+size_t FrameBuffer::color_targets_count() const
+{
+  return impl->color_targets.size();
+}
+
+void FrameBuffer::attach_color_target(const Texture& texture, size_t layer, size_t mip_level)
+{
+  engine_check(impl->color_targets.size() < MAX_COLOR_TARGETS_COUNT);
+
+  RenderTarget new_target(texture, layer, mip_level, impl->color_targets.size());
+
+  engine_check(new_target.is_colored);
+
+  if (!impl->color_targets.empty())
+  {
+    size_t buffer_width = impl->color_targets.front().level_info.width;    
+    size_t buffer_height = impl->color_targets.front().level_info.height;
+
+    engine_check(buffer_width == new_target.level_info.width);
+    engine_check(buffer_height == new_target.level_info.height);
+  }
+
+  impl->color_targets.emplace_back(std::move(new_target));
+
+  impl->need_reconfigure = true;  
+}
+
+void FrameBuffer::detach_all_color_targets()
+{
+  impl->color_targets.clear();
+  impl->color_targets.emplace_back(RenderTarget());
+
+  impl->need_reconfigure = true;  
+}
+
+void FrameBuffer::attach_depth_buffer(const Texture& texture, size_t layer, size_t mip_level)
+{
+  unimplemented();
+}
+
+void FrameBuffer::detach_depth_buffer()
+{
+  unimplemented();
 }

@@ -184,4 +184,48 @@ std::vector<std::string> split (const char* str, const char* delimiters, const c
   return res;
 }
 
+std::string basename(const char* src)
+{
+  size_t len = strlen(src);
+
+  for (const char* s=src+len; len--;)
+    if (*--s == '.')
+      return std::string(src, s-src);
+
+  return std::string(src);
+}
+
+std::string suffix (const char* src)
+{
+  size_t len = strlen(src);
+
+  for (const char* s=src+len; s!=src;)
+    if (*--s == '.')
+      return std::string(s, len-(s-src));
+
+  return std::string();
+}
+
+std::string dir(const char* src)
+{
+  size_t len = strlen(src);
+
+  for (const char* s=src+len; len--;)
+    if (*--s == '/')
+      return std::string(src, s-src+1);
+
+  return std::string("./");
+}
+
+std::string notdir(const char* src)
+{
+  size_t len = strlen(src);
+
+  for (const char* s=src+len; s!=src;)
+    if (*--s == '/')
+      return std::string(s+1, len-(s-src)-1);
+
+  return std::string(src);
+}
+
 }}

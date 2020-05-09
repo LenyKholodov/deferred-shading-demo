@@ -14,6 +14,13 @@ extern "C"
 
 #include <cstdio>
 
+namespace engine {
+namespace application {
+
+void init_application_osx();
+
+}}
+
 /// Implementation details
 struct Application::Impl
 {
@@ -25,6 +32,9 @@ struct Application::Impl
     : exited(false)
     , exit_code(0)
   {
+#ifdef __APPLE__
+    init_application_osx();
+#endif
   }
 
   ~Impl()

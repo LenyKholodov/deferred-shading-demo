@@ -105,7 +105,7 @@ void VertexBuffer::bind()
 ///
 
 IndexBuffer::IndexBuffer(const DeviceContextPtr& context, size_t indices_count)
-  : impl(std::make_shared<BufferImpl>(context, GL_ELEMENT_ARRAY_BUFFER, indices_count, sizeof (value_type)))
+  : impl(std::make_shared<BufferImpl>(context, GL_ELEMENT_ARRAY_BUFFER, indices_count, sizeof(index_type)))
 {
 }
 
@@ -114,7 +114,7 @@ size_t IndexBuffer::indices_count() const
   return impl->count;
 }
 
-void IndexBuffer::set_data(size_t offset, size_t count, const value_type* indices)
+void IndexBuffer::set_data(size_t offset, size_t count, const index_type* indices)
 {
   impl->set_data(offset, count, indices);
 }

@@ -4,9 +4,13 @@
 #include <application/window.h>
 #include <common/exception.h>
 #include <common/log.h>
+#include <common/string.h>
+#include <common/file.h>
 
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <cmath>
 
 extern "C"
 {
@@ -124,6 +128,23 @@ class DeviceContextImpl: BaseObject
     Window render_window; //target window
     GLFWwindow* context; //context
     DeviceOptions device_options; //device options
+};
+
+/// Texture level info
+struct TextureLevelInfo
+{
+  GLuint texture_id; //texture object
+  GLenum target; //target
+  GLint width; //layer width
+  GLint height; //layer height
+
+  TextureLevelInfo()
+    : texture_id()
+    , target()
+    , width()
+    , height()
+  {
+  }
 };
 
 }}

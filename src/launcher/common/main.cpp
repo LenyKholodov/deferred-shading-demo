@@ -22,85 +22,6 @@ using namespace engine::common;
 using namespace engine::application;
 using namespace engine;
 
-#if defined (_MSC_VER) || defined (__APPLE_CC__)
-  #define engine_offsetof(X,Y) offsetof(X,Y)
-#else
-  #define engine_offsetof(X,Y) (reinterpret_cast<size_t> (&(static_cast<X*> (0)->*(&X::Y))))
-#endif
-
-static render::Vertex vertices[] = {
-  {math::vec3f(-0.6f, -0.4f, 0), math::vec3f(), math::vec4f(1.f, 0.f, 0.f, 1.0f), math::vec2f(0, 0)},
-  {math::vec3f( 0.6f, -0.4f, 0), math::vec3f(), math::vec4f(0.f, 1.f, 0.f, 1.0f), math::vec2f(0, 0)},
-  {math::vec3f(  0.f,  0.6f, 0), math::vec3f(), math::vec4f(0.f, 0.f, 1.f, 1.0f), math::vec2f(0, 0)},
-};
-
-static const char* vertex_shader_text =
-"#version 410 core\n"
-"uniform mat4 MVP;\n"
-"in vec3 vCol;\n"
-"in vec2 vPos;\n"
-"out vec3 color;\n"
-"void main()\n"
-"{\n"
-"    gl_Position = MVP * vec4(vPos, 0.0, 1.0);\n"
-"    color = vCol;\n"
-"}\n";
-
-static const char* fragment_shader_text =
-"#version 410 core\n"
-"in vec3 color;\n"
-"out vec4 outColor;\n"
-"void main()\n"
-"{\n"
-"    outColor = vec4(color, 1.0);\n"
-"}\n";
-
-void print_compilation_log(GLint shader)
-{
-  GLint log_length = 0;
-
-  glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &log_length);
-  
-  if (!log_length)
-    return;
-
-  std::string log_buffer;
-
-  log_buffer.resize(log_length - 1);
-
-  GLsizei real_log_size = 0;
-
-  glGetShaderInfoLog(shader, log_length, &real_log_size, &log_buffer[0]);
-
-  if (real_log_size)
-    log_buffer.resize(real_log_size - 1);
-
-  engine_log_info("%s", log_buffer.c_str());
-}
-
-void print_linking_log(GLint program)
-{
-  GLint log_length = 0;
-
-  glGetProgramiv(program, GL_INFO_LOG_LENGTH, &log_length);
-  
-  if (!log_length)
-    return;
-
-  std::string log_buffer;
-
-  log_buffer.resize(log_length - 1);
-
-  GLsizei real_log_size = 0;
-
-  glGetProgramInfoLog(program, log_length, &real_log_size, &log_buffer[0]);
-
-  if (real_log_size)
-    log_buffer.resize(real_log_size - 1);
-
-  engine_log_info("%s", log_buffer.c_str());
-}
-
 int main(void)
 {
   try
@@ -140,35 +61,37 @@ int main(void)
     render::Device render_device(window, render_options);
     render::FrameBuffer frame_buffer = render_device.window_frame_buffer();
 
-    GLuint vertex_array;
-    GLint mvp_location, vpos_location, vcol_location;
+    media::geometry::Mesh media_mesh = media::geometry::MeshFactory::create_sphere(0.5f);
 
-    glGenVertexArrays(1, &vertex_array);
-    glBindVertexArray(vertex_array);
+    media_mesh = media_mesh.merge(media::geometry::MeshFactory::create_box(1.5f, 0.1f, 0.1f));
+    media_mesh = media_mesh.merge(media::geometry::MeshFactory::create_box(0.1f, 1.5f, 0.1f));
+    media_mesh = media_mesh.merge(media::geometry::MeshFactory::create_box(0.1f, 0.1f, 1.5f));
 
-    render::VertexBuffer vb = render_device.create_vertex_buffer(sizeof(vertices));
+    media::geometry::Mesh media_mesh2 = media::geometry::MeshFactory::create_sphere(0.25f);
 
-    vb.set_data(0, sizeof(vertices)/sizeof(vertices[0]), vertices);
+    media_mesh2 = media_mesh2.merge(media::geometry::MeshFactory::create_box(0.75f, 0.05f, 0.05f));
+    media_mesh2 = media_mesh2.merge(media::geometry::MeshFactory::create_box(0.05f, 0.75f, 0.05f));
+    media_mesh2 = media_mesh2.merge(media::geometry::MeshFactory::create_box(0.05f, 0.05f, 0.75f));
 
-    render::Shader vertex_shader = render_device.create_vertex_shader("vs.default", vertex_shader_text);
-    render::Shader pixel_shader = render_device.create_pixel_shader("ps.default", fragment_shader_text);
-    render::Program program = render_device.create_program("default", vertex_shader, pixel_shader);
+    render::Mesh mesh = render_device.create_mesh(media_mesh);
+    render::Mesh mesh2 = render_device.create_mesh(media_mesh2);
 
-    vpos_location = program.get_attribute_location("vPos");
-    vcol_location = program.get_attribute_location("vCol");
+    render::Program program = render_device.create_program_from_file("media/shaders/simple.glsl");
+
+    GLint mvp_location;
     mvp_location = program.get_uniform_location("MVP");
 
-    engine_log_debug("vpos_location=%d, vcol_location=%d, mvp_location=%d",
-        vpos_location, vcol_location, mvp_location);
+    render::Pass pass = render_device.create_pass(program);
 
-    vb.bind();
+    pass.set_clear_color(math::vec4f(0.2f));
 
-    glEnableVertexAttribArray(vpos_location);
-    glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
-                         sizeof(vertices[0]), (void*)engine_offsetof(render::Vertex, position));
-    glEnableVertexAttribArray(vcol_location);
-    glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
-                          sizeof(vertices[0]), (void*)engine_offsetof(render::Vertex, color));
+    pass.set_depth_stencil_state(render::DepthStencilState(true, true, render::CompareMode_Less));
+
+    render::Pass pass2 = render_device.create_pass(program);
+
+    pass2.set_blend_state(render::BlendState(true, render::BlendArgument::BlendArgument_SourceColor, render::BlendArgument::BlendArgument_SourceColor));
+    pass2.set_depth_stencil_state(render::DepthStencilState(true, true, render::CompareMode_Less));
+    pass2.set_clear_flags(render::Clear_DepthStencil);
 
       //main loop
 
@@ -181,10 +104,8 @@ int main(void)
 
       mat4x4 m, p, mvp;
 
-      frame_buffer.bind();
-      frame_buffer.clear();
-
       mat4x4_identity(m);
+      mat4x4_rotate_Y(m, m, (float) glfwGetTime() / 2);
       mat4x4_rotate_Z(m, m, (float) glfwGetTime());
       mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
       mat4x4_mul(mvp, p, m);
@@ -192,7 +113,14 @@ int main(void)
       program.bind();
 
       glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) mvp);
-      glDrawArrays(GL_TRIANGLES, 0, 3);
+
+      pass.add_mesh(mesh);
+
+      pass.render();
+
+      pass2.add_mesh(mesh2);
+
+      pass2.render();
 
       window.swap_buffers();
 

@@ -40,7 +40,7 @@ struct Primitive
 class Mesh
 {
   public:
-    typedef uint16_t IndexType;
+    typedef uint16_t index_type;
 
     /// Constructor
     Mesh();
@@ -71,8 +71,8 @@ class Mesh
     void indices_resize(uint32_t indices_count);
 
     /// Get indices data
-    const IndexType* indices_data() const;
-    IndexType* indices_data();
+    const index_type* indices_data() const;
+    index_type* indices_data();
 
     /// Clear indices data
     void indices_clear();
@@ -91,7 +91,7 @@ class Mesh
 
     /// Add primitives
     uint32_t add_primitive(PrimitiveType type, uint32_t first, uint32_t count, uint32_t base_vertex);
-    uint32_t add_primitive(PrimitiveType type, const Vertex* vertices, IndexType vertices_count, const IndexType* indices, uint32_t indices_count);
+    uint32_t add_primitive(PrimitiveType type, const Vertex* vertices, index_type vertices_count, const index_type* indices, uint32_t indices_count);
 
     /// Remove primitive
     void remove_primitive(uint32_t primitive_index);

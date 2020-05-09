@@ -18,4 +18,10 @@ std::string vformat(const char* format, va_list args);
 /// Tokenize string
 std::vector<std::string> split(const char* str, const char* delimiters=" ", const char* spaces=" \t", const char* brackets="");
 
+/// Filename utilities
+std::string basename(const char* src);
+std::string suffix (const char* src);
+std::string dir(const char* src);
+std::string notdir(const char* src);
+
 }}

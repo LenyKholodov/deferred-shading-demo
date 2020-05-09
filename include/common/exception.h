@@ -45,7 +45,7 @@ Exception make_not_implemented_exception(const char* method_name="");
 #define engine_check(X) if (!(X)) throw engine::common::Exception::format("Assertion failed: %s", #X)
 
 /// Assertion check; check range
-#define engine_check_range(X, MAX) if (!(X) >= (MAX)) throw engine::common::make_range_exception(#X, (X), (MAX))
+#define engine_check_range(X, MAX) if ((X) >= (MAX)) throw engine::common::make_range_exception(#X, (X), (MAX))
 
 /// Assertion check; check null
 #define engine_check_null(X) if (!(X)) throw engine::common::make_null_argument_exception(#X)

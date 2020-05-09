@@ -22,18 +22,18 @@ Mesh MeshFactory::create_box(float width, float height, float depth)
 {
   Mesh return_value;
 
-  Vertex          vertices[24];  //6 faces each containing 4 vertices
-  Mesh::IndexType indices[36];   //6 faces each containing 2 triangles
-  vec3f           normals[6] = { vec3f(1, 0, 0), vec3f(-1, 0, 0), vec3f(0, 1, 0), vec3f(0, -1, 0), vec3f(0, 0, 1), vec3f(0, 0, -1) };
-  vec3f           size(width * 0.5f, height * 0.5f, depth * 0.5f);
+  Vertex           vertices[24];  //6 faces each containing 4 vertices
+  Mesh::index_type indices[36];   //6 faces each containing 2 triangles
+  vec3f            normals[6] = { vec3f(1, 0, 0), vec3f(-1, 0, 0), vec3f(0, 1, 0), vec3f(0, -1, 0), vec3f(0, 0, 1), vec3f(0, 0, -1) };
+  vec3f            size(width * 0.5f, height * 0.5f, depth * 0.5f);
 
   for (size_t i = 0, count = sizeof(normals) / sizeof(*normals); i < count; i++)
   {
-    const vec3f&    normal            = normals[i];
-    Mesh::IndexType base_vertex_index = i * 4;
-    Vertex*         base_vertex       = vertices + base_vertex_index;
-    vec3f           corner1           = vec3f(1.0f) - abs(normal),
-                    corner2           = rotate(radian(constf::pi / 2.0f), normal) * corner1;
+    const vec3f&     normal            = normals[i];
+    Mesh::index_type base_vertex_index = i * 4;
+    Vertex*          base_vertex       = vertices + base_vertex_index;
+    vec3f            corner1           = vec3f(1.0f) - abs(normal),
+                     corner2           = rotate(radian(constf::pi / 2.0f), normal) * corner1;
 
     for (size_t j = 0; j < 4; j++)
     {
@@ -52,7 +52,7 @@ Mesh MeshFactory::create_box(float width, float height, float depth)
     base_vertex[3].position  = (normal - corner2) * size;
     base_vertex[3].tex_coord = vec2f(0.f, 0.f);
 
-    Mesh::IndexType* base_index = indices + i * 6;
+    Mesh::index_type* base_index = indices + i * 6;
 
     base_index[0] = base_vertex_index + 3;
     base_index[1] = base_vertex_index + 2;
@@ -75,7 +75,7 @@ Mesh MeshFactory::create_sphere(float radius)
   constexpr size_t VERTICES_COUNT = 2 + SPHERE_PARALLELS_COUNT * SPHERE_MERIDIANS_COUNT;
 
   Vertex          vertices[VERTICES_COUNT];
-  Mesh::IndexType indices[TRIANGLES_COUNT * 3];
+  Mesh::index_type indices[TRIANGLES_COUNT * 3];
 
   float horizontal_angle_step = 2.0f * constf::pi / float(SPHERE_MERIDIANS_COUNT - 1),
         vertical_angle_step   = constf::pi / float(SPHERE_PARALLELS_COUNT + 2);
@@ -106,7 +106,7 @@ Mesh MeshFactory::create_sphere(float radius)
     }
   }
 
-  Mesh::IndexType* current_index = indices;
+  Mesh::index_type* current_index = indices;
 
   //fill indices
   for (size_t i = 0; i < SPHERE_MERIDIANS_COUNT; i++)

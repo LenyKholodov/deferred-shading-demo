@@ -20,23 +20,26 @@ namespace render {
 
 using application::Window;
 using media::geometry::Vertex;
+using media::geometry::PrimitiveType;
 
 /// Implementation forwards
 class DeviceContextImpl;
 struct BufferImpl;
 struct ShaderImpl;
+struct TextureLevelInfo;
 
 typedef std::shared_ptr<DeviceContextImpl> DeviceContextPtr;
 
 /// Clear flags
-enum ClearFlag
+enum ClearFlags
 {
-  ClearFlag_Color   = 1, //clear color buffer
-  ClearFlag_Depth   = 2, //clear depth buffer
-  ClearFlag_Stencil = 4, //clear stencil buffer
+  Clear_None    = 0,
+  Clear_Color   = 1, //clear color buffer
+  Clear_Depth   = 2, //clear depth buffer
+  Clear_Stencil = 4, //clear stencil buffer
 
-  ClearFlag_DepthStencil = ClearFlag_Depth | ClearFlag_Stencil,
-  ClearFlag_All          = ClearFlag_DepthStencil | ClearFlag_Color,
+  Clear_DepthStencil = Clear_Depth | Clear_Stencil,
+  Clear_All          = Clear_DepthStencil | Clear_Color,
 };
 
 /// Shader type
@@ -44,6 +47,54 @@ enum ShaderType
 {
   ShaderType_Vertex, //vertex shader
   ShaderType_Pixel, //pixel shader
+};
+
+/// Pixel format
+enum PixelFormat
+{
+  PixelFormat_RGBA8,
+  PixelFormat_RGB16F,
+  PixelFormat_D24,
+};
+
+/// Texture filter
+enum TextureFilter
+{
+  TextureFilter_Point,
+  TextureFilter_Linear,
+  TextureFilter_LinearMipLinear,
+};
+
+///Compare mode
+enum CompareMode
+{
+  CompareMode_AlwaysFail, //always false
+  CompareMode_AlwaysPass, //always true
+  CompareMode_Equal, //new_value == reference_value
+  CompareMode_NotEqual, //new_value != reference_value
+  CompareMode_Less, //new_value <  reference_value
+  CompareMode_LessEqual, //new_value <= reference_value
+  CompareMode_Greater, //new_value >  reference_value
+  CompareMode_GreaterEqual, //new_value >= reference_value
+
+  CompareMode_Num
+};
+
+///Blend function argument
+enum BlendArgument
+{
+  BlendArgument_Zero, //0
+  BlendArgument_One, //1
+  BlendArgument_SourceColor, //source color
+  BlendArgument_SourceAlpha, //source alpha
+  BlendArgument_InverseSourceColor, //1 - source color
+  BlendArgument_InverseSourceAlpha, //1 - source alpha
+  BlendArgument_DestinationColor, //destination color
+  BlendArgument_DestinationAlpha, //destination alpha
+  BlendArgument_InverseDestinationColor, //1 - destination color
+  BlendArgument_InverseDestinationAlpha, //1 - destination alpha
+
+  BlendArgument_Num
 };
 
 /// Viewport
@@ -55,7 +106,61 @@ struct Viewport
     : x(x), y(y), width(width), height(height) {}
 };
 
-/// Framebuffer
+/// Texture
+class Texture
+{
+  public:
+    /// Constructor
+    Texture(const DeviceContextPtr& context, size_t width, size_t height, size_t layers, PixelFormat format, bool generate_mips = true);
+
+    /// Texture width
+    size_t width() const;
+
+    /// Texture height
+    size_t height() const;
+
+    /// Layers count
+    size_t layers() const;
+
+    /// Mipmaps count
+    size_t mips_count() const;
+
+    /// Pixel format
+    PixelFormat format() const;
+
+    /// Min filter
+    TextureFilter min_filter() const;
+
+    /// Set min filter
+    void set_min_filter(TextureFilter filter);
+
+    /// Mag filter
+    TextureFilter mag_filter() const;
+
+    /// Set mag filter
+    void set_mag_filter(TextureFilter filter);
+
+    /// Set texture data
+    void set_data(size_t layer, size_t x, size_t y, size_t width, size_t height, const void* data);
+
+    /// Get texture data
+    void get_data(size_t layer, size_t x, size_t y, size_t width, size_t height, void* data);
+
+    /// Bind texture to context
+    void bind();
+
+    /// Generate mipmaps
+    void generate_mips();
+
+    /// Get texture level info (internal use only)
+    void get_level_info(size_t layer, size_t level, TextureLevelInfo& out_info) const;
+
+  private:
+    struct Impl;
+    std::shared_ptr<Impl> impl;
+};
+
+/// Frame buffer
 class FrameBuffer
 {
   public:
@@ -64,12 +169,6 @@ class FrameBuffer
 
     /// Constructor
     FrameBuffer(const DeviceContextPtr& context, const Window& window);
-
-    /// Number of rendering targets
-    size_t render_targets_count() const;
-
-    /// Attach render window
-    void add_render_target(const Window& window);
 
     /// Set viewport
     void set_viewport(const Viewport& viewport);
@@ -80,20 +179,23 @@ class FrameBuffer
     /// Get viewport
     const Viewport& viewport() const;
 
-    /// Set clear color
-    void set_clear_color(const math::vec4f& color);
+    /// Number of color targets
+    size_t color_targets_count() const;
 
-    /// Get clear color
-    const math::vec4f& clear_color() const;
+    /// Attach texture
+    void attach_color_target(const Texture& texture, size_t layer = 0, size_t mip_level = 0);
 
-    /// Clear buffers
-    void clear(unsigned int flags = ClearFlag_All);
+    /// Clear all color attachments
+    void detach_all_color_targets();
+
+    /// Attach depth buffer
+    void attach_depth_buffer(const Texture& texture, size_t layer = 0, size_t mip_level = 0);
+
+    /// Detach depth buffer
+    void detach_depth_buffer();
 
     /// Bind framebuffer for rendering to a context
     void bind();
-
-    //TODO: attach textures as render targets
-    //TODO: attach render buffer as depth-buffer
 
   private:
     struct Impl;
@@ -125,7 +227,7 @@ class VertexBuffer
 class IndexBuffer
 {
   public:
-    typedef uint16_t value_type;
+    typedef media::geometry::Mesh::index_type index_type;
 
     /// Constructor
     IndexBuffer(const DeviceContextPtr& context, size_t indices_count);
@@ -134,7 +236,7 @@ class IndexBuffer
     size_t indices_count() const;
 
     /// Load data
-    void set_data(size_t offset, size_t count, const value_type* indices);
+    void set_data(size_t offset, size_t count, const index_type* indices);
 
     /// Bind buffer
     void bind();
@@ -190,6 +292,166 @@ class Program
     std::shared_ptr<Impl> impl;
 };
 
+/// Rendering primitive
+struct Primitive
+{
+  PrimitiveType type; //type of primitive
+  size_t base_vertex; //base vertex offset
+  size_t first; //first primitive
+  size_t count; //number of primitives for rendering
+  VertexBuffer vertex_buffer; //vertex buffer
+  IndexBuffer index_buffer; //index buffer
+
+  Primitive(PrimitiveType type,
+            const VertexBuffer& vb,
+            const IndexBuffer& ib,
+            size_t first,
+            size_t count,
+            size_t base_vertex = 0)
+    : type(type)
+    , base_vertex(base_vertex)
+    , first(first)
+    , count(count)
+    , vertex_buffer(vb)
+    , index_buffer(ib)
+  {
+  }
+};
+
+/// Triangle list
+struct TriangleList : Primitive
+{
+  TriangleList(const VertexBuffer& vb,
+            const IndexBuffer& ib,
+            size_t first,
+            size_t count,
+            size_t base_vertex = 0)
+    : Primitive(media::geometry::PrimitiveType_TriangleList, vb, ib, first, count, base_vertex)
+  {
+  }
+};
+
+/// Mesh
+class Mesh
+{
+  public:
+    /// Constructor
+    Mesh(const DeviceContextPtr& context, const media::geometry::Mesh& mesh);
+
+    /// Primitives count
+    size_t primitives_count() const;
+
+    /// Get primitive
+    const Primitive& primitive(size_t index) const;
+
+  private:
+    struct Impl;
+    std::shared_ptr<Impl> impl;
+};
+
+/// Depth and stencil state description
+struct DepthStencilState
+{
+  bool depth_test_enable; //is depth test enabled
+  bool depth_write_enable; //is depth write enabled
+  CompareMode depth_compare_mode; //depth compare mode
+
+  //TODO add stencil operations
+
+  DepthStencilState(bool depth_test_enable, bool depth_write_enable, CompareMode depth_compare_mode)
+    : depth_test_enable(depth_test_enable)
+    , depth_write_enable(depth_write_enable)
+    , depth_compare_mode(depth_compare_mode)
+    {}
+};
+
+/// Blending state descritption
+struct BlendState
+{
+  bool blend_enable; //is blending enabled
+  BlendArgument blend_source_argument; //blend function source argument
+  BlendArgument blend_destination_argument; //blend function destination argument
+
+  BlendState(bool blend_enable, BlendArgument blend_source_argument, BlendArgument blend_destination_argument)
+    : blend_enable(blend_enable)
+    , blend_source_argument(blend_source_argument)
+    , blend_destination_argument(blend_destination_argument)
+    {}
+};
+
+/// Pass
+class Pass
+{
+  public:
+    /// Constructor
+    Pass(const DeviceContextPtr& context, const FrameBuffer& frame_buffer, const Program& program);
+
+    /// Set framebuffer
+    void set_frame_buffer(const FrameBuffer& frame_buffer);
+
+    /// Frame buffer
+    FrameBuffer& frame_buffer() const;
+
+    /// Set program
+    void set_program(const Program& program);
+
+    /// Program
+    Program& program() const;
+
+    /// Set clear color
+    void set_clear_color(const math::vec4f& color);
+
+    /// Get clear color
+    const math::vec4f& clear_color() const;
+
+    /// Clearing flags
+    ClearFlags clear_flags() const;
+
+    /// Set clearing flags
+    void set_clear_flags(ClearFlags clear_flags);    
+
+    /// Set depth stencil state
+    void set_depth_stencil_state(const DepthStencilState& state);
+
+    /// Get depth stencil state
+    const DepthStencilState& depth_stencil_state() const;
+
+    /// Set blend state
+    void set_blend_state(const BlendState& state);
+
+    /// Get blend state
+    const BlendState& blend_state() const;
+
+    /// Number of added primitives
+    size_t primitives_count() const;    
+
+    /// Add primitive to a pass
+    void add_primitive(const Primitive& primitive);
+
+    /// Add primitive to a pass
+    void add_primitive(Primitive&& primitive);    
+
+    /// Add mesh to a pass
+    void add_mesh(const Mesh& mesh);
+
+    /// Remove all primitives from the pass
+    /// will be automaticall called after the Pass::render
+    void remove_all_primitives();
+
+    /// Number of reserved primitives
+    size_t primitives_capacity() const;
+
+    /// Reserve number of primitives
+    void reserve_primitives(size_t count);
+
+    /// Render pass
+    void render();
+
+  private:
+    struct Impl;
+    std::shared_ptr<Impl> impl;
+};
+
 /// Device options
 struct DeviceOptions
 {
@@ -227,6 +489,27 @@ class Device
 
     /// Create program
     Program create_program(const char* name, const Shader& vertex_shader, const Shader& pixel_shader);
+
+    /// Create program from source code
+    Program create_program_from_source(const char* name, const char* source_code);
+
+    /// Create program source file
+    Program create_program_from_file(const char* file_name);
+
+    /// Create default program
+    Program get_default_program() const;
+
+    /// Create pass
+    Pass create_pass();
+
+    /// Create pass
+    Pass create_pass(const Program& program);
+
+    /// Create mesh
+    Mesh create_mesh(const media::geometry::Mesh& mesh);
+
+    /// Create texture2d
+    Texture create_texture2d(size_t width, size_t height, PixelFormat format, bool generate_mips = true);
 
   private:
     struct Impl;
