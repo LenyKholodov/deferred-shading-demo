@@ -1,3 +1,5 @@
+#include <common/exception.h>
+
 extern "C"
 {
 #include <glad/gl.h>
@@ -9,6 +11,8 @@ extern "C"
 
 #include <stdlib.h>
 #include <stdio.h>
+
+using namespace engine::common;
 
 static const struct
 {
@@ -59,6 +63,15 @@ int main(void)
     GLint mvp_location, vpos_location, vcol_location;
 
     glfwSetErrorCallback(error_callback);
+
+    try
+    {
+      throw Exception::format("my_exception_text");
+    }
+    catch (std::exception& e)
+    {
+      printf("%s\n", e.what());
+    }
 
     if (!glfwInit())
         exit(EXIT_FAILURE);
