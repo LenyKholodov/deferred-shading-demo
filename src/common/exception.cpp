@@ -117,4 +117,30 @@ Exception make_null_argument_exception(const char* param_name)
   return Exception::format("Null argument '%s'", param_name);
 }
 
+Exception make_range_exception(const char* param_name, double value, double min, double max)
+{
+  if (!param_name)
+    param_name = "<unknown>";
+
+  return Exception::format("Argument '%s'=%g is out of range [%g; %g)", param_name, value, min, max); 
+}
+
+Exception make_range_exception(const char* param_name, double value, double max)
+{
+  return make_range_exception(param_name, value, 0.0, max);
+}
+
+Exception make_not_implemented_exception(const char* method_name)
+{
+  if (method_name && *method_name)
+    return Exception::format("Method is not implemented '%s'", method_name);
+
+  return Exception("Method is not implemented");
+}
+
+[[ noreturn ]] void unimplemented(const char* method_name)
+{
+  throw make_not_implemented_exception(method_name);
+}
+
 }}

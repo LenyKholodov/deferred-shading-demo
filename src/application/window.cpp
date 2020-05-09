@@ -140,8 +140,14 @@ struct Window::Impl
   {
     engine_log_info("Creating window '%s' %ux%u...", title.c_str(), width, height);
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+      //setting minimal OpenGL version 4.1
+      //TODO: configuration
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true); 
 
     window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
 
@@ -287,7 +293,7 @@ int Window::height() const
   return height;
 }
 
-int Window::framebuffer_width() const
+int Window::frame_buffer_width() const
 {
   int width = 0, height = 0;
 
@@ -296,7 +302,7 @@ int Window::framebuffer_width() const
   return width;
 }
 
-int Window::framebuffer_height() const
+int Window::frame_buffer_height() const
 {
   int width = 0, height = 0;
 

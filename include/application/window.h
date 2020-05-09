@@ -133,10 +133,10 @@ class Window
     int height() const;
 
     /// Window width
-    int framebuffer_width() const;
+    int frame_buffer_width() const;
 
     /// Window height
-    int framebuffer_height() const;
+    int frame_buffer_height() const;
 
     /// Close window
     void close();
