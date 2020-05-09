@@ -1,5 +1,6 @@
 stuff
 xcuserdata
+xcshareddata
 .DS_Store
 src/launcher/osx/build/
 
