@@ -1,18 +1,18 @@
 #include <common/property_map.h>
+#include <common/named_dictionary.h>
 
-#include <unordered_map>
 #include <vector>
 
 using namespace engine::common;
 
 typedef std::vector<Property> PropertyArray;
-typedef std::unordered_map<std::string, size_t> PropertyDict;
+typedef NamedDictionary<size_t> PropertyDict;
 
 /// Implementation details of property map
 struct PropertyMap::Impl
 {
   PropertyArray properties;
-  PropertyDict name_dict;
+  PropertyDict dictionary;
 };
 
 PropertyMap::PropertyMap()
@@ -45,15 +45,10 @@ const Property* PropertyMap::find(const char* name) const
 
 Property* PropertyMap::find(const char* name)
 {
-  if (!name)
-    return nullptr;
-  
-  PropertyDict::const_iterator iter = impl->name_dict.find(name);
+  if (size_t* index = impl->dictionary.find(name))
+    return &impl->properties[*index];
 
-  if (iter == impl->name_dict.end())
-    return nullptr;
-
-  return &impl->properties[iter->second];
+  return nullptr;
 }
 
 const Property& PropertyMap::get(const char* name) const
@@ -63,8 +58,6 @@ const Property& PropertyMap::get(const char* name) const
 
 Property& PropertyMap::get(const char* name)
 {
-  engine_check_null(name);
-
   if (Property* property = find(name))
     return *property;
 
@@ -84,7 +77,7 @@ size_t PropertyMap::insert(const char* name, const Property& property)
 
   try
   {
-    impl->name_dict[name] = index;
+    impl->dictionary.insert(name, index);
 
     return index;
   }
@@ -93,4 +86,24 @@ size_t PropertyMap::insert(const char* name, const Property& property)
     impl->properties.pop_back();
     throw;
   }
+}
+
+void PropertyMap::erase(const char* name)
+{
+  if (!name)
+    return;
+
+  size_t* index = impl->dictionary.find(name);
+
+  if (!index)
+    return;
+
+  impl->properties.erase(impl->properties.begin() + *index);
+  impl->dictionary.erase(name);
+}
+
+void PropertyMap::clear()
+{
+  impl->properties.clear();
+  impl->dictionary.clear();    
 }

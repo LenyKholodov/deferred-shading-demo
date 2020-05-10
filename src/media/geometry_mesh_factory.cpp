@@ -18,7 +18,7 @@ const size_t SPHERE_MERIDIANS_COUNT = 32;
 /// Mesh factory
 
 /// Create simple geometry objects
-Mesh MeshFactory::create_box(float width, float height, float depth)
+Mesh MeshFactory::create_box(const char* material, float width, float height, float depth)
 {
   Mesh return_value;
 
@@ -62,12 +62,12 @@ Mesh MeshFactory::create_box(float width, float height, float depth)
     base_index[5] = base_vertex_index;
   }
 
-  return_value.add_primitive(PrimitiveType_TriangleList, vertices, sizeof(vertices) / sizeof(*vertices), indices, sizeof(indices) / sizeof(*indices));
+  return_value.add_primitive(material, PrimitiveType_TriangleList, vertices, sizeof(vertices) / sizeof(*vertices), indices, sizeof(indices) / sizeof(*indices));
 
   return return_value;
 }
 
-Mesh MeshFactory::create_sphere(float radius)
+Mesh MeshFactory::create_sphere(const char* material, float radius)
 {
   Mesh return_value;
     
@@ -80,7 +80,8 @@ Mesh MeshFactory::create_sphere(float radius)
   float horizontal_angle_step = 2.0f * constf::pi / float(SPHERE_MERIDIANS_COUNT - 1),
         vertical_angle_step   = constf::pi / float(SPHERE_PARALLELS_COUNT + 2);
 
-  //north and south pole vertices
+    //north and south pole vertices
+
   vertices[0].normal = vec3f(0.f, 1.f, 0.f);
   vertices[1].normal = vec3f(0.f, -1.f, 0.f);
 
@@ -90,7 +91,8 @@ Mesh MeshFactory::create_sphere(float radius)
 
   Vertex* current_vertex = vertices + base_vertex;
 
-  //generate vertices for each meridian
+    //generate vertices for each meridian
+
   for (size_t i = 0; i < SPHERE_MERIDIANS_COUNT; i++, current_horizontal_angle += horizontal_angle_step)
   {
     float current_vertical_angle = vertical_angle_step;
@@ -108,23 +110,27 @@ Mesh MeshFactory::create_sphere(float radius)
 
   Mesh::index_type* current_index = indices;
 
-  //fill indices
+    //fill indices
+
   for (size_t i = 0; i < SPHERE_MERIDIANS_COUNT; i++)
   {
     size_t vertex1 = base_vertex + i * SPHERE_PARALLELS_COUNT,                                  //first vertex for current meridian
            vertex2 = base_vertex + (i + 1) % SPHERE_MERIDIANS_COUNT * SPHERE_PARALLELS_COUNT;   //first vertex for next meridian
 
-    //north pole triangle
+      //north pole triangle
+
     *current_index++ = 0;
     *current_index++ = vertex1;
     *current_index++ = vertex2;
 
-    //south pole triangle
+      //south pole triangle
+
     *current_index++ = 1;
     *current_index++ = vertex2 + SPHERE_PARALLELS_COUNT - 1;
     *current_index++ = vertex1 + SPHERE_PARALLELS_COUNT - 1;
 
-    //north to south meridian triangles
+      //north to south meridian triangles
+
     for (size_t j = 0; j < SPHERE_PARALLELS_COUNT - 1; j++)
     {
       *current_index++ = vertex1 + j;
@@ -146,7 +152,7 @@ Mesh MeshFactory::create_sphere(float radius)
     vertex.tex_coord = abs(vec2f(vertex.normal.x, vertex.normal.y));
   }
 
-  return_value.add_primitive(PrimitiveType_TriangleList, vertices, sizeof(vertices) / sizeof(*vertices), indices, sizeof(indices) / sizeof(*indices));
+  return_value.add_primitive(material, PrimitiveType_TriangleList, vertices, sizeof(vertices) / sizeof(*vertices), indices, sizeof(indices) / sizeof(*indices));
 
   return return_value;
 }

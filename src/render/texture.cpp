@@ -44,12 +44,12 @@ struct Texture::Impl
        size_t height,
        size_t layers,
        PixelFormat format,
-       bool generate_mips)
+       size_t mips_count)
     : context(context)
     , width(width)
     , height(height)
     , layers(layers)
-    , mips_count()
+    , mips_count(mips_count)
     , format(format)
     , min_filter(TextureFilter_Linear)
     , mag_filter(TextureFilter_Linear)
@@ -71,7 +71,7 @@ struct Texture::Impl
     {
       case PixelFormat_RGBA8:
         gl_internal_format = GL_RGBA8;
-        gl_uncompressed_format = GL_RGBA8;
+        gl_uncompressed_format = GL_RGBA;
         gl_uncompressed_type = GL_UNSIGNED_BYTE;
         break;
       case PixelFormat_RGB16F:
@@ -96,7 +96,7 @@ struct Texture::Impl
 
         bind();
 
-        mips_count = get_mips_count(width, height);
+        mips_count = std::min(mips_count, get_mips_count(width, height));
 
         GLint level_width = static_cast<GLint>(width);
         GLint level_height = static_cast<GLint>(height);
@@ -118,10 +118,6 @@ struct Texture::Impl
     }
 
     glTexParameteri(target, GL_TEXTURE_MAX_LEVEL, static_cast<GLint>(mips_count - 1));
-
-    if (generate_mips)
-      glTexParameteri(target, GL_GENERATE_MIPMAP, GL_TRUE);
-
 
     context->check_errors();
   }
@@ -171,8 +167,8 @@ struct Texture::Impl
   }
 };
 
-Texture::Texture(const DeviceContextPtr& context, size_t width, size_t height, size_t layers, PixelFormat format, bool generate_mips)
-  : impl(std::make_shared<Impl>(context, width, height, layers, format, generate_mips))
+Texture::Texture(const DeviceContextPtr& context, size_t width, size_t height, size_t layers, PixelFormat format, size_t mips_count)
+  : impl(std::make_shared<Impl>(context, width, height, layers, format, mips_count))
 {
 }
 

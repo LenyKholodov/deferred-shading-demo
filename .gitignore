@@ -1,6 +1,7 @@
 stuff
 xcuserdata
 xcshareddata
+project.xcworkspace
 .DS_Store
 src/launcher/osx/build/
 

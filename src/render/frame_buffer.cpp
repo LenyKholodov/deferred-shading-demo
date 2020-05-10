@@ -299,8 +299,6 @@ void FrameBuffer::bind()
     attachments[attachments_count++] = rt.attachment;
   }
 
-  printf("attachments_count=%d\n", attachments_count);
-
   switch (attachments_count)
   {
     case 0:
@@ -349,7 +347,6 @@ void FrameBuffer::attach_color_target(const Texture& texture, size_t layer, size
 void FrameBuffer::detach_all_color_targets()
 {
   impl->color_targets.clear();
-  impl->color_targets.emplace_back(RenderTarget());
 
   impl->need_reconfigure = true;  
 }

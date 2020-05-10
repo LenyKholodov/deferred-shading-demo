@@ -97,9 +97,14 @@ const FrameBuffer& Device::window_frame_buffer() const
   return impl->window_frame_buffer;
 }
 
-Texture Device::create_texture2d(size_t width, size_t height, PixelFormat format, bool generate_mips)
+FrameBuffer Device::create_frame_buffer()
 {
-  return Texture(impl->context, width, height, 1, format, generate_mips);
+  return FrameBuffer(impl->context);
+}
+
+Texture Device::create_texture2d(size_t width, size_t height, PixelFormat format, size_t mips_count)
+{
+  return Texture(impl->context, width, height, 1, format, mips_count);
 }
 
 VertexBuffer Device::create_vertex_buffer(size_t count)
@@ -225,7 +230,26 @@ Pass Device::create_pass()
   return create_pass(get_default_program());
 }
 
-Mesh Device::create_mesh(const media::geometry::Mesh& mesh)
+Mesh Device::create_mesh(const media::geometry::Mesh& mesh, const MaterialList& materials)
 {
-  return Mesh(impl->context, mesh);
+  return Mesh(impl->context, mesh, materials);
+}
+
+Primitive Device::create_plane(const Material& material)
+{
+  Vertex vertices [] = {
+    {math::vec3f(-1.f, -1.f, 0), math::vec3f(0.f, 1.f, 0.f), math::vec4f(1.f, 1.f, 1.f, 1.0f), math::vec2f(0, 0)},
+    {math::vec3f(-1.f, 1.f, 0), math::vec3f(0.f, 1.f, 0.f), math::vec4f(1.f, 1.f, 1.f, 1.0f), math::vec2f(0, 1)},
+    {math::vec3f(1.f, 1.f, 0), math::vec3f(0.f, 1.f, 0.f), math::vec4f(1.f, 1.f, 1.f, 1.0f), math::vec2f(1, 1)},
+    {math::vec3f(1.f, -1.f, 0), math::vec3f(0.f, 1.f, 0.f), math::vec4f(1.f, 1.f, 1.f, 1.0f), math::vec2f(1, 0)},
+  };
+  IndexBuffer::index_type indices [] = {0, 1, 2, 0, 2, 3};
+
+  VertexBuffer vertex_buffer = create_vertex_buffer(4);
+  IndexBuffer index_buffer = create_index_buffer(6);
+
+  vertex_buffer.set_data(0, 4, vertices);
+  index_buffer.set_data(0, 6, indices);
+
+  return Primitive(material, PrimitiveType::PrimitiveType_TriangleList, vertex_buffer, index_buffer, 0, 2, 0);
 }

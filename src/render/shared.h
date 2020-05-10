@@ -6,6 +6,7 @@
 #include <common/log.h>
 #include <common/string.h>
 #include <common/file.h>
+#include <common/named_dictionary.h>
 
 #include <string>
 #include <vector>

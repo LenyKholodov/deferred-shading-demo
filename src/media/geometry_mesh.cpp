@@ -17,8 +17,10 @@ struct Mesh::Impl
   UninitializedStorage<index_type> indices_data;
   PrimitiveArray primitives;
 
-  uint32_t add_primitive(PrimitiveType type, uint32_t first, uint32_t count, uint32_t base_vertex)
+  uint32_t add_primitive(const char* material, PrimitiveType type, uint32_t first, uint32_t count, uint32_t base_vertex)
   {
+    engine_check_null(material);
+
     if (type < 0 || type >= PrimitiveType_Num)
       throw Exception(format("Can't add unknown primitive type %d", type).c_str());
 
@@ -28,20 +30,24 @@ struct Mesh::Impl
     primitive.first = first;
     primitive.count = count;
     primitive.base_vertex = base_vertex;
+    primitive.material = material;
 
     primitives.push_back(primitive);
 
     return (uint32_t)primitives.size() - 1;
   }
 
-  uint32_t add_primitive(PrimitiveType type, const Vertex* vertices, index_type vertices_count, const index_type* indices, uint32_t indices_count)
+  uint32_t add_primitive(const char* material, PrimitiveType type, const Vertex* vertices, index_type vertices_count, const index_type* indices, uint32_t indices_count)
   {
-    //TODO check vertices/indices count limit
+    engine_check_null(material);
+
+      //TODO check vertices/indices count limit
 
     uint32_t current_vertices_count = static_cast<uint32_t>(vertices_data.size());
     uint32_t current_indices_count = static_cast<uint32_t>(indices_data.size());
 
-    //resize buffers to store additional data
+      //resize buffers to store additional data
+
     vertices_data.resize(current_vertices_count + vertices_count);
 
     try
@@ -55,18 +61,20 @@ struct Mesh::Impl
       throw;
     }
 
-    //copy data
+      //copy data
+
     memcpy(vertices_data.data() + current_vertices_count, vertices, vertices_count * sizeof(Vertex));
     memcpy(indices_data.data() + current_indices_count, indices, indices_count * sizeof(index_type));
 
-    //add primitive
-    return add_primitive(type, current_indices_count / 3, indices_count / 3, current_vertices_count);
+      //add primitive
+
+    return add_primitive(material, type, current_indices_count / 3, indices_count / 3, current_vertices_count);
   }
 
   Mesh merge(const Mesh& mesh)
   {
-    //TODO check vertices/indices count limit
-    //TODO code can be optimized - copy larger mesh first and smaller mesh second
+      //TODO check vertices/indices count limit
+      //TODO code can be optimized - copy larger mesh first and smaller mesh second
 
     Mesh return_value;
 
@@ -75,29 +83,32 @@ struct Mesh::Impl
              second_mesh_vertices_count = mesh.vertices_count(),
              second_mesh_indices_count  = mesh.indices_count();
 
-    //allocate memory
+      //allocate memory
+
     return_value.vertices_resize(vertices_count + second_mesh_vertices_count);
     return_value.indices_resize(indices_count + second_mesh_indices_count);
 
-    //copy buffers
+      //copy buffers
+
     memcpy(return_value.vertices_data(), vertices_data.data(), vertices_count * sizeof(Vertex));
     memcpy(return_value.indices_data(), indices_data.data(), indices_count * sizeof(index_type));
     memcpy(return_value.vertices_data() + vertices_count, mesh.vertices_data(), second_mesh_vertices_count * sizeof(Vertex));
     memcpy(return_value.indices_data() + indices_count, mesh.indices_data(), second_mesh_indices_count * sizeof(index_type));
 
-    //copy primitives
+      //copy primitives
+
     for (size_t i = 0, count = primitives.size(); i < count; i++)
     {
       const Primitive& primitive = primitives[i];
 
-      return_value.add_primitive(primitive.type, primitive.first, primitive.count, primitive.base_vertex);
+      return_value.add_primitive(primitive.material.c_str(), primitive.type, primitive.first, primitive.count, primitive.base_vertex);
     }
 
     for (uint32_t i = 0, count = mesh.primitives_count(); i < count; i++)
     {
       const Primitive& primitive = mesh.primitive(i);
 
-      return_value.add_primitive(primitive.type, primitive.first + indices_count / 3, primitive.count, primitive.base_vertex + vertices_count);
+      return_value.add_primitive(primitive.material.c_str(), primitive.type, primitive.first + indices_count / 3, primitive.count, primitive.base_vertex + vertices_count);
     }
 
     return return_value;
@@ -198,14 +209,14 @@ const Primitive& Mesh::primitive(uint32_t index) const
 }
 
 /// Add / remove primitives
-uint32_t Mesh::add_primitive(PrimitiveType type, uint32_t first, uint32_t count, uint32_t base_vertex)
+uint32_t Mesh::add_primitive(const char* material, PrimitiveType type, uint32_t first, uint32_t count, uint32_t base_vertex)
 {
-  return impl->add_primitive(type, first, count, base_vertex);
+  return impl->add_primitive(material, type, first, count, base_vertex);
 }
 
-uint32_t Mesh::add_primitive(PrimitiveType type, const Vertex* vertices, index_type vertices_count, const index_type* indices, uint32_t indices_count)
+uint32_t Mesh::add_primitive(const char* material, PrimitiveType type, const Vertex* vertices, index_type vertices_count, const index_type* indices, uint32_t indices_count)
 {
-  return impl->add_primitive(type, vertices, vertices_count, indices, indices_count);
+  return impl->add_primitive(material, type, vertices, vertices_count, indices, indices_count);
 }
 
 void Mesh::remove_primitive(uint32_t primitive_index)

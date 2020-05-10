@@ -132,6 +132,8 @@ ShaderImpl& Shader::get_impl() const
 /// Program
 ///
 
+typedef std::vector<ProgramParameter> ProgramParameterArray;
+
 struct Program::Impl
 {
   DeviceContextPtr context; //device context
@@ -139,6 +141,7 @@ struct Program::Impl
   Shader pixel_shader; //pixel shader
   std::string name; //program name
   GLuint program_id; //GL program ID
+  ProgramParameterArray parameters;
 
   Impl(const DeviceContextPtr& context, const char* name, const Shader& vertex_shader, const Shader& pixel_shader)
     : context(context)
@@ -192,6 +195,99 @@ struct Program::Impl
       engine_log_info("%s", log_buffer.c_str());
     }
 
+      //get parameters
+
+    GLint parameters_count = 0, max_parameter_name_length = 0;
+
+    glGetProgramiv(program_id, GL_ACTIVE_UNIFORMS, &parameters_count);
+    glGetProgramiv(program_id, GL_ACTIVE_UNIFORM_MAX_LENGTH, &max_parameter_name_length);
+
+    parameters.reserve(size_t(parameters_count));
+
+    std::string parameter_name;
+
+    for (GLint i=0; i<parameters_count; i++)
+    {
+        //read parameter name
+
+      parameter_name.resize(max_parameter_name_length);      
+      
+      GLint  name_length = 0, elements_count = 0;
+      GLenum type = 0;
+      
+      glGetActiveUniform(program_id, i, (unsigned int)parameter_name.size(), &name_length, &elements_count, &type, &parameter_name[0]);
+
+      if ((size_t)name_length > parameter_name.size())
+        name_length = (unsigned int)parameter_name.size ();
+        
+      if (name_length < 0)
+        name_length = 0;
+        
+      parameter_name.resize(name_length);
+
+      if (strstr(parameter_name.c_str(), "[0]") == &*parameter_name.end() - 3)
+        parameter_name.resize(parameter_name.size () - 3);
+
+        //prepare parameter
+     
+      ProgramParameter parameter;
+      
+      parameter.name           = parameter_name;
+      parameter.name_hash      = common::StringHash(parameter_name);
+      parameter.elements_count = (unsigned int)elements_count;
+      parameter.location       = glGetUniformLocation(program_id, parameter_name.c_str());
+      
+      switch (type)
+      {
+        case GL_INT:
+          parameter.type = parameter.elements_count <= 1 ? PropertyType_Int : PropertyType_IntArray;
+          break;
+        case GL_FLOAT:
+          parameter.type = parameter.elements_count <= 1 ? PropertyType_Float : PropertyType_FloatArray;
+          break;
+        case GL_FLOAT_VEC2:
+          parameter.type = parameter.elements_count <= 1 ? PropertyType_Vec2f : PropertyType_Vec2fArray;
+          break;
+        case GL_FLOAT_VEC3:
+          parameter.type = parameter.elements_count <= 1 ? PropertyType_Vec3f : PropertyType_Vec3fArray;
+          break;
+        case GL_FLOAT_VEC4:
+          parameter.type = parameter.elements_count <= 1 ? PropertyType_Vec4f : PropertyType_Vec4fArray;
+          break;
+        case GL_FLOAT_MAT4:
+          parameter.type = parameter.elements_count <= 1 ? PropertyType_Mat4f : PropertyType_Mat4fArray;
+          break;
+        case GL_SAMPLER_2D:
+        case GL_SAMPLER_CUBE:
+        case GL_SAMPLER_1D:
+        case GL_SAMPLER_3D:
+        case GL_SAMPLER_1D_SHADOW:
+        case GL_SAMPLER_2D_SHADOW:
+        case GL_SAMPLER_2D_RECT:
+        case GL_SAMPLER_2D_RECT_SHADOW:
+          parameter.type = PropertyType_Int;
+          break;                
+        default:
+          throw Exception::format("Unknown uniform '%s' in program '%s' gl_type 0x%04x with %u element(s)",
+            parameter.name.c_str (), name, type, elements_count);
+      }
+
+      if (elements_count > 1)
+      {
+        engine_log_debug("...%03d: uniform '%s' type %s[%u] (gl_type=0x%04x)",
+          parameter.location, parameter.name.c_str(), Property::get_type_name(parameter.type), elements_count, type);
+      }
+      else
+      {
+        engine_log_debug("...%03d: uniform '%s' type %s (gl_type=0x%04x)",
+          parameter.location, parameter.name.c_str(), Property::get_type_name(parameter.type), type);
+      }
+
+      parameters.emplace_back(std::move(parameter));
+    }
+
+      //check errors
+
     context->check_errors();
   }
 
@@ -218,6 +314,11 @@ Program::Program(const DeviceContextPtr& context, const char* name, const Shader
   engine_check_null(context);
 
   impl = std::make_shared<Impl>(context, name, vertex_shader, pixel_shader);
+}
+
+const char* Program::name() const
+{
+  return impl->name.c_str();
 }
 
 int Program::find_uniform_location(const char* name) const
@@ -267,4 +368,17 @@ void Program::bind()
   impl->context->make_current();
 
   glUseProgram(impl->program_id);
+}
+
+size_t Program::parameters_count() const
+{
+  return impl->parameters.size();
+}
+
+const ProgramParameter* Program::parameters() const
+{
+  if (impl->parameters.empty())
+    return nullptr;
+
+  return &impl->parameters[0];
 }

@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace engine {
 namespace common {
@@ -16,8 +17,17 @@ enum PropertyType
 {
   PropertyType_Int,
   PropertyType_Float,
+  PropertyType_Vec2f,
+  PropertyType_Vec3f,
   PropertyType_Vec4f,
   PropertyType_Mat4f,
+
+  PropertyType_IntArray,
+  PropertyType_FloatArray,
+  PropertyType_Vec2fArray,
+  PropertyType_Vec3fArray,
+  PropertyType_Vec4fArray,
+  PropertyType_Mat4fArray,
 };
 
 /// Property base class
@@ -35,7 +45,10 @@ class Property
     template <class T> const T& get() const;
 
     /// Set value
-    template <class T> void set(const T& data) const;
+    template <class T> void set(const T& data);
+
+    /// Get property type string
+    static const char* get_type_name(PropertyType type);
 
   private:
     struct Value;
@@ -70,6 +83,12 @@ class PropertyMap
 
     /// Add property
     size_t insert(const char* name, const Property& property);
+
+    /// Remove property
+    void erase(const char* name);
+
+    /// Remove all properties
+    void clear();
 
     /// Set property
     template <class T> Property& set(const char* name, const T& value);

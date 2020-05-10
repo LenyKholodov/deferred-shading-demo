@@ -2,8 +2,9 @@
 
 #include <math/vector.h>
 
-#include <cstdint>
+#include <string>
 #include <memory>
+#include <cstdint>
 
 namespace engine {
 namespace media {
@@ -30,10 +31,11 @@ enum PrimitiveType
 /// Renderable primitive
 struct Primitive
 {
-  PrimitiveType type;     /// primitive type
-  uint32_t first;         /// first vertex index
-  uint32_t count;         /// primitives count
-  uint32_t base_vertex;   /// base vertex index
+  PrimitiveType type;          /// primitive type
+  uint32_t      first;         /// first vertex index
+  uint32_t      count;         /// primitives count
+  uint32_t      base_vertex;   /// base vertex index
+  std::string   material;      /// material name
 };
 
 /// Mesh
@@ -90,8 +92,8 @@ class Mesh
     const Primitive& primitive(uint32_t index) const;
 
     /// Add primitives
-    uint32_t add_primitive(PrimitiveType type, uint32_t first, uint32_t count, uint32_t base_vertex);
-    uint32_t add_primitive(PrimitiveType type, const Vertex* vertices, index_type vertices_count, const index_type* indices, uint32_t indices_count);
+    uint32_t add_primitive(const char* material_name, PrimitiveType type, uint32_t first, uint32_t count, uint32_t base_vertex);
+    uint32_t add_primitive(const char* material_name, PrimitiveType type, const Vertex* vertices, index_type vertices_count, const index_type* indices, uint32_t indices_count);
 
     /// Remove primitive
     void remove_primitive(uint32_t primitive_index);
@@ -115,8 +117,8 @@ class MeshFactory
 {
   public:
     /// create simple geometry objects
-    static Mesh create_box(float width, float height, float depth);
-    static Mesh create_sphere(float radius);
+    static Mesh create_box(const char* material, float width, float height, float depth);
+    static Mesh create_sphere(const char* material, float radius);
 };
 
 }}}

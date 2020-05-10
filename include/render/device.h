@@ -2,6 +2,9 @@
 
 #include <media/geometry.h>
 
+#include <common/string.h>
+#include <common/property_map.h>
+
 #include <math/vector.h>
 
 #include <memory>
@@ -21,6 +24,9 @@ namespace render {
 using application::Window;
 using media::geometry::Vertex;
 using media::geometry::PrimitiveType;
+using common::PropertyType;
+using common::Property;
+using common::PropertyMap;
 
 /// Implementation forwards
 class DeviceContextImpl;
@@ -106,12 +112,29 @@ struct Viewport
     : x(x), y(y), width(width), height(height) {}
 };
 
+/// Program parameter
+struct ProgramParameter 
+{
+  std::string name; //parameter name
+  common::StringHash name_hash; //hash of the name
+  PropertyType type; //type of parameter
+  size_t elements_count; //number of elements (for arrays)
+  int location; //location of the parameter
+
+  ProgramParameter()
+    : type()
+    , name_hash("")
+    , elements_count()
+    , location(-1)
+  { }
+};
+
 /// Texture
 class Texture
 {
   public:
     /// Constructor
-    Texture(const DeviceContextPtr& context, size_t width, size_t height, size_t layers, PixelFormat format, bool generate_mips = true);
+    Texture(const DeviceContextPtr& context, size_t width, size_t height, size_t layers, PixelFormat format, size_t mips_count = (size_t)-1);
 
     /// Texture width
     size_t width() const;
@@ -154,6 +177,72 @@ class Texture
 
     /// Get texture level info (internal use only)
     void get_level_info(size_t layer, size_t level, TextureLevelInfo& out_info) const;
+
+  private:
+    struct Impl;
+    std::shared_ptr<Impl> impl;
+};
+
+/// Texture list
+class TextureList
+{
+  public:
+    /// List of textures
+    TextureList();
+
+    /// Textures count
+    size_t count() const;
+
+    /// Add texture
+    void insert(const char* name, const Texture& texture);
+
+    /// Find texture by name
+    Texture* find(const char* name) const;
+
+    /// Get texture by name or throw exception
+    Texture& get(const char* name) const;
+
+  private:
+    struct Impl;
+    std::shared_ptr<Impl> impl;
+};
+
+/// Material
+class Material
+{
+  public:
+    /// Constructor
+    Material();
+
+    /// Textures
+    const TextureList& textures() const;
+
+    /// Properties
+    const PropertyMap& properties() const;
+
+  private:
+    struct Impl;
+    std::shared_ptr<Impl> impl;
+};
+
+/// Material list
+class MaterialList
+{
+  public:
+    /// List of materials
+    MaterialList();
+
+    /// Textures count
+    size_t count() const;
+
+    /// Add material
+    void insert(const char* name, const Material& material);
+
+    /// Find material by name
+    Material* find(const char* name) const;
+
+    /// Get material by name or throw exception
+    Material& get(const char* name) const;
 
   private:
     struct Impl;
@@ -272,6 +361,9 @@ class Program
     /// Constructor
     Program(const DeviceContextPtr& context, const char* name, const Shader& vertex_shader, const Shader& pixel_shader);
 
+    /// Name of the program
+    const char* name() const;
+
     /// Uniform location
     int find_uniform_location(const char* name) const;
 
@@ -283,6 +375,12 @@ class Program
 
     /// Attribute location (exception if not found)
     int get_attribute_location(const char* name) const;
+
+    /// Number of parameters
+    size_t parameters_count() const;
+
+    /// Parameters
+    const ProgramParameter* parameters() const;
 
     /// Bind
     void bind();
@@ -301,8 +399,10 @@ struct Primitive
   size_t count; //number of primitives for rendering
   VertexBuffer vertex_buffer; //vertex buffer
   IndexBuffer index_buffer; //index buffer
+  Material material; //material
 
-  Primitive(PrimitiveType type,
+  Primitive(const Material& material,
+            PrimitiveType type,
             const VertexBuffer& vb,
             const IndexBuffer& ib,
             size_t first,
@@ -314,6 +414,7 @@ struct Primitive
     , count(count)
     , vertex_buffer(vb)
     , index_buffer(ib)
+    , material(material)
   {
   }
 };
@@ -321,12 +422,13 @@ struct Primitive
 /// Triangle list
 struct TriangleList : Primitive
 {
-  TriangleList(const VertexBuffer& vb,
-            const IndexBuffer& ib,
-            size_t first,
-            size_t count,
-            size_t base_vertex = 0)
-    : Primitive(media::geometry::PrimitiveType_TriangleList, vb, ib, first, count, base_vertex)
+  TriangleList(const Material& material,
+               const VertexBuffer& vb,
+               const IndexBuffer& ib,
+               size_t first,
+               size_t count,
+               size_t base_vertex = 0)
+    : Primitive(material, media::geometry::PrimitiveType_TriangleList, vb, ib, first, count, base_vertex)
   {
   }
 };
@@ -336,10 +438,13 @@ class Mesh
 {
   public:
     /// Constructor
-    Mesh(const DeviceContextPtr& context, const media::geometry::Mesh& mesh);
+    Mesh(const DeviceContextPtr& context, const media::geometry::Mesh& mesh, const MaterialList& materials);
 
     /// Primitives count
     size_t primitives_count() const;
+
+    /// Items
+    const Primitive* primitives() const;
 
     /// Get primitive
     const Primitive& primitive(size_t index) const;
@@ -379,12 +484,61 @@ struct BlendState
     {}
 };
 
+/// Binding context for properties and textures (does not control life times)
+class BindingContext
+{
+  public:
+    /// Constructors
+    BindingContext() = default;
+
+    template <class T1>
+    BindingContext(const T1&);
+
+    template <class T1, class T2>
+    BindingContext(const T1&, const T2&);
+
+    template <class T1, class T2, class T3>
+    BindingContext(const T1&, const T2&, const T3&);
+
+    template <class T1, class T2, class T3, class T4>
+    BindingContext(const T1&, const T2&, const T3&, const T4&);
+
+    /// Bind parents
+    void bind(const BindingContext*);
+
+    /// Bind texture list
+    void bind(const TextureList&);
+
+    /// Bind property map
+    void bind(const PropertyMap&);
+
+    /// Bind material
+    void bind(const Material&);
+
+    /// Find property
+    const Property* find_property(const char* name) const;
+
+    /// Find texture
+    const Texture* find_texture(const char* name) const;
+
+  private:
+    template <class T, class Finder>
+    static const T* find(const BindingContext* context, const char* name, Finder fn);
+
+  private:
+    const BindingContext* parent[2] = {nullptr, nullptr};
+    const TextureList* textures = nullptr;
+    const PropertyMap* properties = nullptr;
+};
+
 /// Pass
 class Pass
 {
   public:
     /// Constructor
-    Pass(const DeviceContextPtr& context, const FrameBuffer& frame_buffer, const Program& program);
+    Pass(const DeviceContextPtr& context,
+         const FrameBuffer& frame_buffer,
+         const Program& program);
 
     /// Set framebuffer
     void set_frame_buffer(const FrameBuffer& frame_buffer);
@@ -422,6 +576,12 @@ class Pass
     /// Get blend state
     const BlendState& blend_state() const;
 
+    /// Pass properties
+    PropertyMap& properties() const;
+
+    /// Pass textures
+    TextureList& textures() const;
+
     /// Number of added primitives
     size_t primitives_count() const;    
 
@@ -445,7 +605,7 @@ class Pass
     void reserve_primitives(size_t count);
 
     /// Render pass
-    void render();
+    void render(const BindingContext* = nullptr);
 
   private:
     struct Impl;
@@ -474,6 +634,9 @@ class Device
 
     /// Window frame buffer
     const FrameBuffer& window_frame_buffer() const;
+
+    /// Create frame buffer
+    FrameBuffer create_frame_buffer();
 
     /// Create vertex buffer
     VertexBuffer create_vertex_buffer(size_t count);
@@ -506,14 +669,19 @@ class Device
     Pass create_pass(const Program& program);
 
     /// Create mesh
-    Mesh create_mesh(const media::geometry::Mesh& mesh);
+    Mesh create_mesh(const media::geometry::Mesh& mesh, const MaterialList& materials);
+
+    /// Create plane for drawing full-screen sprite
+    Primitive create_plane(const Material& material);
 
     /// Create texture2d
-    Texture create_texture2d(size_t width, size_t height, PixelFormat format, bool generate_mips = true);
+    Texture create_texture2d(size_t width, size_t height, PixelFormat format, size_t mips_count = (size_t)-1);
 
   private:
     struct Impl;
     std::shared_ptr<Impl> impl;
 };
+
+#include <render/detail/device.inl>
 
 }}

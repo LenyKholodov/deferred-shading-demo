@@ -104,6 +104,8 @@ struct Pass::Impl
   ClearFlags clear_flags; //clear flags
   DepthStencilState depth_stencil_state; //depth stencil state
   BlendState blend_state; //blend state
+  PropertyMap properties; //pass properties
+  TextureList textures; //pass textures
 
   Impl(const DeviceContextPtr& context, const FrameBuffer& frame_buffer, const Program& program)
     : context(context)
@@ -118,7 +120,7 @@ struct Pass::Impl
     primitives.reserve(PRIMITIVES_RESERVE_SIZE);
   }
 
-  void render()
+  void render(const BindingContext* parent_bindings)
   {
     engine_check(sizeof(IndexBuffer::index_type) == 2); //change glDrawElements call for different sizes
 
@@ -128,8 +130,9 @@ struct Pass::Impl
 
     clear();
 
-    bind_depth_stencil_state();
+      //bind states
 
+    bind_depth_stencil_state();
     bind_blend_state();
 
       //bind program
@@ -140,13 +143,17 @@ struct Pass::Impl
 
     InputLayout input_layout(program);
 
+      //update binding context
+
+    BindingContext bindings(parent_bindings, properties, textures);
+
       //draw primitives
 
-    context->check_errors();    
+    context->check_errors();
 
     for (auto& primitive : primitives)
     {
-      render_primitive(primitive, input_layout);
+      render_primitive(primitive, program, input_layout, bindings);
     }
 
       //clear pass
@@ -154,8 +161,16 @@ struct Pass::Impl
     primitives.clear();
   }
 
-  void render_primitive(Primitive& primitive, InputLayout& input_layout)
+  void render_primitive(Primitive& primitive, const Program& program, InputLayout& input_layout, BindingContext& parent_bindings)
   {
+      //setup bindings
+
+    BindingContext bindings(&parent_bindings, primitive.material);
+
+      //setup shader parameters and textures
+
+    bind_program_parameters(program, bindings);
+
       //setup buffers
 
     primitive.vertex_buffer.bind();
@@ -207,6 +222,92 @@ struct Pass::Impl
     glDrawElements(gl_primitive_type, gl_count, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(offset));
 
     context->check_errors();
+  }
+
+  template <class T>
+  struct ArrayChecker {
+    static void check(const Program& program, const Property& property, const ProgramParameter& param)
+    {
+      auto& v = property.get<std::vector<T>>();
+
+      if (v.size() < param.elements_count)
+        throw Exception::format("Program '%s' parameter '%s' elements count mismatch: expected %u, got %u",
+          program.name(), param.name.c_str(), (unsigned int)param.elements_count, (unsigned int)v.size());
+    }
+  };
+
+  void bind_program_parameters(const Program& program, const BindingContext& bindings)
+  {
+    size_t parameters_count = program.parameters_count();
+    const ProgramParameter* parameters = program.parameters();
+
+    if (!parameters_count)
+      return ;
+
+    const ProgramParameter* param = parameters;
+
+    for (size_t i=0; i<parameters_count; i++, param++)
+    {
+      const Property* property = bindings.find_property(param->name.c_str());
+
+      if (!property)
+        throw Exception::format("Can't find shader program '%s' parameter '%s'", program.name(), param->name.c_str());
+
+      if (property->type() != param->type)
+        throw Exception::format("Program '%s' parameter '%s' type mismatch: expected %s, got %s",
+          program.name(), param->name.c_str(), Property::get_type_name(param->type), Property::get_type_name(property->type()));
+
+      GLsizei elements_count = static_cast<GLsizei>(param->elements_count);
+
+      switch (param->type)
+      {
+        case PropertyType_Int:
+          glUniform1iv(param->location, elements_count, &property->get<int>());
+          break;
+        case PropertyType_Float:
+          glUniform1fv(param->location, elements_count, &property->get<float>());
+          break;
+        case PropertyType_Vec2f:
+          glUniform2fv(param->location, elements_count, &property->get<math::vec2f>()[0]);
+          break;
+        case PropertyType_Vec3f:
+          glUniform3fv(param->location, elements_count, &property->get<math::vec3f>()[0]);
+          break;
+        case PropertyType_Vec4f:
+          glUniform4fv(param->location, elements_count, &property->get<math::vec4f>()[0]);
+          break;
+        case PropertyType_Mat4f:
+          glUniformMatrix4fv(param->location, elements_count, GL_TRUE, &property->get<math::mat4f>()[0][0]);
+          break;
+        case PropertyType_IntArray:
+          ArrayChecker<int>::check(program, *property, *param);
+          glUniform1iv(param->location, elements_count, &property->get<int>());
+          break;
+        case PropertyType_FloatArray:
+          ArrayChecker<float>::check(program, *property, *param);
+          glUniform1fv(param->location, elements_count, &property->get<float>());
+          break;
+        case PropertyType_Vec2fArray:
+          ArrayChecker<math::vec2f>::check(program, *property, *param);
+          glUniform2fv(param->location, elements_count, &property->get<math::vec2f>()[0]);
+          break;
+        case PropertyType_Vec3fArray:
+          ArrayChecker<math::vec3f>::check(program, *property, *param);
+          glUniform3fv(param->location, elements_count, &property->get<math::vec3f>()[0]);
+          break;
+        case PropertyType_Vec4fArray:
+          ArrayChecker<math::vec4f>::check(program, *property, *param);
+          glUniform4fv(param->location, elements_count, &property->get<math::vec4f>()[0]);
+          break;
+        case PropertyType_Mat4fArray:
+          ArrayChecker<math::mat4f>::check(program, *property, *param);
+          glUniformMatrix4fv(param->location, elements_count, GL_TRUE, &property->get<math::mat4f>()[0][0]);
+          break;
+        default:
+          throw Exception::format("Unexpected program '%s' parameter '%s' type %s",
+            program.name(), param->name.c_str(), Property::get_type_name(param->type));
+      }
+    }
   }
 
   void clear()
@@ -398,7 +499,7 @@ size_t Pass::primitives_capacity() const
   return impl->primitives.capacity();
 }
 
-void Pass::render()
+void Pass::render(const BindingContext* bindings)
 {
-  impl->render();
+  impl->render(bindings);
 }
