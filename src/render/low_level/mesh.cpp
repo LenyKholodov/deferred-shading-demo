@@ -2,7 +2,7 @@
 
 #include <vector>
 
-using namespace engine::render;
+using namespace engine::render::low_level;
 
 typedef std::vector<Primitive> PrimitiveArray;
 

@@ -1,7 +1,7 @@
 #include "shared.h"
 
 using namespace engine::common;
-using namespace engine::render;
+using namespace engine::render::low_level;
 
 typedef NamedDictionary<Material> MaterialDict;
 

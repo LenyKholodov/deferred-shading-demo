@@ -2,7 +2,7 @@
 
 #include <vector>
 
-using namespace engine::render;
+using namespace engine::render::low_level;
 using namespace engine::common;
 
 #if defined (_MSC_VER) || defined (__APPLE_CC__)

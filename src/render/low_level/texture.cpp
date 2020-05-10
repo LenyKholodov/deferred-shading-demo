@@ -1,6 +1,6 @@
 #include "shared.h"
 
-using namespace engine::render;
+using namespace engine::render::low_level;
 using namespace engine::common;
 
 namespace

@@ -22,6 +22,7 @@ extern "C"
 
 namespace engine {
 namespace render {
+namespace low_level {
 
 /// Basic class for internal render objects
 class BaseObject
@@ -182,4 +183,4 @@ struct ProgramParameter
   { }
 };
 
-}}
+}}}

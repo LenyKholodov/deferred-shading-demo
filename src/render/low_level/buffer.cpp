@@ -1,10 +1,10 @@
 #include "shared.h"
 
-using namespace engine::render;
+using namespace engine::render::low_level;
 using namespace engine::common;
 
 /// Implementation details of buffer
-struct engine::render::BufferImpl
+struct engine::render::low_level::BufferImpl
 { 
   DeviceContextPtr context; //device context
   size_t count; //number of elements

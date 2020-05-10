@@ -1,13 +1,13 @@
 #include "shared.h"
 
-using namespace engine::render;
+using namespace engine::render::low_level;
 using namespace engine::common;
 
 ///
 /// Shader internals
 ///
 
-struct engine::render::ShaderImpl
+struct engine::render::low_level::ShaderImpl
 {
   DeviceContextPtr context; //context
   ShaderType type; //shader type

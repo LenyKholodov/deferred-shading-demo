@@ -20,6 +20,7 @@ class Window;
 }
 
 namespace render {
+namespace low_level {
 
 using application::Window;
 using media::geometry::Vertex;
@@ -668,4 +669,4 @@ class Device
 
 #include <render/detail/device.inl>
 
-}}
+}}}

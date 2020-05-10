@@ -19,6 +19,7 @@ extern "C"
 #include <stdio.h>
 
 using namespace engine::common;
+using namespace engine::render::low_level;
 using namespace engine::application;
 using namespace engine;
 
@@ -54,21 +55,21 @@ int main(void)
 
       //render setup
 
-    render::DeviceOptions render_options;
+    DeviceOptions render_options;
 
     //render_options.debug = false;
 
-    render::Device render_device(window, render_options);
-    render::FrameBuffer g_buffer_frame_buffer = render_device.create_frame_buffer();
-    render::FrameBuffer frame_buffer = render_device.window_frame_buffer();
+    Device render_device(window, render_options);
+    FrameBuffer g_buffer_frame_buffer = render_device.create_frame_buffer();
+    FrameBuffer frame_buffer = render_device.window_frame_buffer();
 
     int g_buffer_width = window.frame_buffer_width();
     int g_buffer_height = window.frame_buffer_height();
 
-    render::Texture positions_texture = render_device.create_texture2d(g_buffer_width, g_buffer_height, render::PixelFormat::PixelFormat_RGB16F, 1);
-    render::Texture normals_texture = render_device.create_texture2d(g_buffer_width, g_buffer_height, render::PixelFormat::PixelFormat_RGB16F, 1);
-    render::Texture albedo_texture = render_device.create_texture2d(g_buffer_width, g_buffer_height, render::PixelFormat::PixelFormat_RGBA8, 1);
-    render::Texture specular_texture = render_device.create_texture2d(g_buffer_width, g_buffer_height, render::PixelFormat::PixelFormat_RGBA8, 1);
+    Texture positions_texture = render_device.create_texture2d(g_buffer_width, g_buffer_height, PixelFormat::PixelFormat_RGB16F, 1);
+    Texture normals_texture = render_device.create_texture2d(g_buffer_width, g_buffer_height, PixelFormat::PixelFormat_RGB16F, 1);
+    Texture albedo_texture = render_device.create_texture2d(g_buffer_width, g_buffer_height, PixelFormat::PixelFormat_RGBA8, 1);
+    Texture specular_texture = render_device.create_texture2d(g_buffer_width, g_buffer_height, PixelFormat::PixelFormat_RGBA8, 1);
 
     g_buffer_frame_buffer.attach_color_target(positions_texture);
     g_buffer_frame_buffer.attach_color_target(normals_texture);
@@ -81,9 +82,9 @@ int main(void)
     media::image::Image normal_map ("media/textures/brickwall_normal.jpg");
     media::image::Image specular_map ("media/textures/brickwall_specular.jpg");
 
-    render::Texture model_diffuse_texture = render_device.create_texture2d(diffuse_map.width(), diffuse_map.height(), render::PixelFormat::PixelFormat_RGBA8);
-    render::Texture model_normal_texture = render_device.create_texture2d(normal_map.width(), normal_map.height(), render::PixelFormat::PixelFormat_RGBA8);
-    render::Texture model_specular_texture = render_device.create_texture2d(specular_map.width(), specular_map.height(), render::PixelFormat::PixelFormat_RGBA8);
+    Texture model_diffuse_texture = render_device.create_texture2d(diffuse_map.width(), diffuse_map.height(), PixelFormat::PixelFormat_RGBA8);
+    Texture model_normal_texture = render_device.create_texture2d(normal_map.width(), normal_map.height(), PixelFormat::PixelFormat_RGBA8);
+    Texture model_specular_texture = render_device.create_texture2d(specular_map.width(), specular_map.height(), PixelFormat::PixelFormat_RGBA8);
 
     model_diffuse_texture.set_data(0, 0, 0, diffuse_map.width(), diffuse_map.height(), diffuse_map.bitmap());
     model_diffuse_texture.generate_mips();
@@ -104,40 +105,40 @@ int main(void)
     media_mesh2 = media_mesh2.merge(media::geometry::MeshFactory::create_box("mtl1", 0.05f, 0.75f, 0.05f));
     media_mesh2 = media_mesh2.merge(media::geometry::MeshFactory::create_box("mtl1", 0.05f, 0.05f, 0.75f));
 
-    render::Material mtl1;
-    render::TextureList mtl1_textures = mtl1.textures();
+    Material mtl1;
+    TextureList mtl1_textures = mtl1.textures();
 
     mtl1_textures.insert("diffuse_texture", model_diffuse_texture);
 
-    render::MaterialList materials;
+    MaterialList materials;
 
     materials.insert("mtl1", mtl1);
 
-    render::Mesh mesh = render_device.create_mesh(media_mesh, materials);
-    render::Mesh mesh2 = render_device.create_mesh(media_mesh2, materials);
+    Mesh mesh = render_device.create_mesh(media_mesh, materials);
+    Mesh mesh2 = render_device.create_mesh(media_mesh2, materials);
 
-    //render::Program program = render_device.create_program_from_file("media/shaders/simple.glsl");
-    render::Program program = render_device.create_program_from_file("media/shaders/simple_tex.glsl");
+    //Program program = render_device.create_program_from_file("media/shaders/simple.glsl");
+    Program program = render_device.create_program_from_file("media/shaders/simple_tex.glsl");
 
-    render::Pass pass = render_device.create_pass(program);
+    Pass pass = render_device.create_pass(program);
 
  //   pass.set_frame_buffer(g_buffer_frame_buffer);
 
-    pass.set_depth_stencil_state(render::DepthStencilState(true, true, render::CompareMode_Less));
+    pass.set_depth_stencil_state(DepthStencilState(true, true, CompareMode_Less));
 
-    render::Pass pass2 = render_device.create_pass(program);
+    Pass pass2 = render_device.create_pass(program);
 
    // pass2.set_frame_buffer(g_buffer_frame_buffer);
 
-    pass2.set_depth_stencil_state(render::DepthStencilState(true, true, render::CompareMode_Less));
+    pass2.set_depth_stencil_state(DepthStencilState(true, true, CompareMode_Less));
 
-    pass2.set_clear_flags(render::ClearFlags::Clear_None);
+    pass2.set_clear_flags(ClearFlags::Clear_None);
 
-    render::Program lighting_program = render_device.create_program_from_file("media/shaders/lighting.glsl");
+    Program lighting_program = render_device.create_program_from_file("media/shaders/lighting.glsl");
 
-    render::Pass light_pass = render_device.create_pass(lighting_program);
+    Pass light_pass = render_device.create_pass(lighting_program);
 
-    render::Primitive plane = render_device.create_plane(mtl1);
+    Primitive plane = render_device.create_plane(mtl1);
 
     PropertyMap view_properties;
 
@@ -169,7 +170,7 @@ int main(void)
 
       view_properties.set("MVP", transpose(mvp_transposed));
 
-      render::BindingContext frame_bindings(view_properties);
+      BindingContext frame_bindings(view_properties);
 
       pass.add_mesh(mesh);
 
