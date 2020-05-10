@@ -25,6 +25,9 @@ std::string suffix (const char* src);
 std::string dir(const char* src);
 std::string notdir(const char* src);
 
+/// Wildcard search
+bool wcmatch (const char* str, const char* pattern);
+
 /// String reference
 struct StringRef
 {

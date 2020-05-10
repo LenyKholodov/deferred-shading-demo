@@ -3,9 +3,10 @@
 #include <string>
 #include <vector>
 
+#include <cxxabi.h>
+
 #ifdef __APPLE__
   #include <execinfo.h>
-  #include <cxxabi.h>
 #endif
 
 using namespace engine::common;

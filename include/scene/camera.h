@@ -26,6 +26,9 @@ class Camera : public Node
     /// Projection matrix needs to be updated
     void invalidate_projection_matrix();
 
+    /// Visit node
+    void visit(ISceneVisitor&) override;    
+
   private:
     virtual void recompute_projection_matrix() = 0;
 
@@ -70,6 +73,9 @@ class PerspectiveCamera : public Camera
   protected:
     /// Constructor
     PerspectiveCamera();
+
+    /// Visit node
+    void visit(ISceneVisitor&) override;
 
   private:
     void recompute_projection_matrix() override;

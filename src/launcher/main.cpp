@@ -4,14 +4,13 @@
 #include <application/window.h>
 #include <common/exception.h>
 #include <common/log.h>
+#include <common/component.h>
 
 #include <string>
 #include <ctime>
 
 extern "C"
 {
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
 #include "linmath.h"
 }
 
@@ -28,6 +27,10 @@ int main(void)
   try
   {
     engine_log_info("Application has been started");
+
+      //components loading
+
+    ComponentScope components("render::scene::passes::*");
 
       //application setup
 
@@ -85,6 +88,10 @@ int main(void)
     Texture model_diffuse_texture = render_device.create_texture2d(diffuse_map.width(), diffuse_map.height(), PixelFormat::PixelFormat_RGBA8);
     Texture model_normal_texture = render_device.create_texture2d(normal_map.width(), normal_map.height(), PixelFormat::PixelFormat_RGBA8);
     Texture model_specular_texture = render_device.create_texture2d(specular_map.width(), specular_map.height(), PixelFormat::PixelFormat_RGBA8);
+
+    model_diffuse_texture.set_min_filter(TextureFilter_LinearMipLinear);
+    model_normal_texture.set_min_filter(TextureFilter_LinearMipLinear);
+    model_specular_texture.set_min_filter(TextureFilter_LinearMipLinear);
 
     model_diffuse_texture.set_data(0, 0, 0, diffuse_map.width(), diffuse_map.height(), diffuse_map.bitmap());
     model_diffuse_texture.generate_mips();
@@ -161,8 +168,8 @@ int main(void)
 
       mat4x4_identity(m);
       mat4x4_translate(m, -0.5f, 0.f, 0.f);
-      mat4x4_rotate_Y(m, m, (float) glfwGetTime() / 2);
-      mat4x4_rotate_Z(m, m, (float) glfwGetTime());
+      mat4x4_rotate_Y(m, m, (float) Application::time() / 2);
+      mat4x4_rotate_Z(m, m, (float) Application::time());
       mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
       mat4x4_mul(mvp, p, m);
 
@@ -178,9 +185,9 @@ int main(void)
 
       mat4x4_identity(m);
       mat4x4_translate(m, 0.5f, 0.f, 0.f);
-      mat4x4_rotate_Y(m, m, (float) glfwGetTime() / 2);
-      mat4x4_rotate_Z(m, m, (float) glfwGetTime());
-      mat4x4_rotate_Z(m, m, (float) glfwGetTime());
+      mat4x4_rotate_Y(m, m, (float) Application::time() / 2);
+      mat4x4_rotate_Z(m, m, (float) Application::time());
+      mat4x4_rotate_Z(m, m, (float) Application::time());
       mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
       mat4x4_mul(mvp, p, m);
 

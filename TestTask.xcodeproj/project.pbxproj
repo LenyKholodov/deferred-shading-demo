@@ -25,6 +25,12 @@
 		85FC3D7C24645D8C0023D0E2 /* angle.inl in Resources */ = {isa = PBXBuildFile; fileRef = 85FC3D7224645D8C0023D0E2 /* angle.inl */; };
 		85FC3D7D24645D8C0023D0E2 /* quat.inl in Resources */ = {isa = PBXBuildFile; fileRef = 85FC3D7324645D8C0023D0E2 /* quat.inl */; };
 		85FC3D7E24645D8C0023D0E2 /* constants.inl in Resources */ = {isa = PBXBuildFile; fileRef = 85FC3D7424645D8C0023D0E2 /* constants.inl */; };
+		B3524A43246826AF000BB462 /* scene_renderer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3524A42246826AF000BB462 /* scene_renderer.cpp */; };
+		B3524A4524682DAA000BB462 /* scene_pass_context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3524A4424682DAA000BB462 /* scene_pass_context.cpp */; };
+		B3524A472468356A000BB462 /* frame_node.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3524A4624683569000BB462 /* frame_node.cpp */; };
+		B3524A4924683754000BB462 /* scene_pass_factory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3524A4824683754000BB462 /* scene_pass_factory.cpp */; };
+		B3524A4B2468501A000BB462 /* component.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3524A4A2468501A000BB462 /* component.cpp */; };
+		B3524A4E24685689000BB462 /* test_scene_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3524A4D24685689000BB462 /* test_scene_pass.cpp */; };
 		B379B1DC2465F05A00A434FD /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B379B1DB2465F05A00A434FD /* buffer.cpp */; };
 		B379B1DE246604A600A434FD /* shader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B379B1DD246604A600A434FD /* shader.cpp */; };
 		B379B1E02466286300A434FD /* property_map.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B379B1DF2466286300A434FD /* property_map.cpp */; };
@@ -100,6 +106,12 @@
 		85FC3D7524645D8C0023D0E2 /* quat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = quat.h; sourceTree = "<group>"; };
 		85FC3D7624645D8C0023D0E2 /* utility.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utility.h; sourceTree = "<group>"; };
 		85FC3D7724645D8C0023D0E2 /* vector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vector.h; sourceTree = "<group>"; };
+		B3524A42246826AF000BB462 /* scene_renderer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = scene_renderer.cpp; path = src/render/scene/scene_renderer.cpp; sourceTree = "<group>"; };
+		B3524A4424682DAA000BB462 /* scene_pass_context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = scene_pass_context.cpp; path = src/render/scene/scene_pass_context.cpp; sourceTree = "<group>"; };
+		B3524A4624683569000BB462 /* frame_node.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = frame_node.cpp; path = src/render/scene/frame_node.cpp; sourceTree = "<group>"; };
+		B3524A4824683754000BB462 /* scene_pass_factory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = scene_pass_factory.cpp; path = src/render/scene/scene_pass_factory.cpp; sourceTree = "<group>"; };
+		B3524A4A2468501A000BB462 /* component.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = component.cpp; path = src/common/component.cpp; sourceTree = "<group>"; };
+		B3524A4D24685689000BB462 /* test_scene_pass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = test_scene_pass.cpp; path = src/render/scene_passes/test_scene_pass.cpp; sourceTree = "<group>"; };
 		B379B1DB2465F05A00A434FD /* buffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = buffer.cpp; path = src/render/low_level/buffer.cpp; sourceTree = "<group>"; };
 		B379B1DD246604A600A434FD /* shader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = shader.cpp; path = src/render/low_level/shader.cpp; sourceTree = "<group>"; };
 		B379B1DF2466286300A434FD /* property_map.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = property_map.cpp; path = src/common/property_map.cpp; sourceTree = "<group>"; };
@@ -227,6 +239,8 @@
 		856EAE212465D4B100938D78 /* render */ = {
 			isa = PBXGroup;
 			children = (
+				B3524A4C2468567A000BB462 /* scene_passes */,
+				B3524A4124682691000BB462 /* scene_renderer */,
 				B3524A4024680EAE000BB462 /* low_level */,
 			);
 			name = render;
@@ -337,6 +351,25 @@
 			name = low_level;
 			sourceTree = "<group>";
 		};
+		B3524A4124682691000BB462 /* scene_renderer */ = {
+			isa = PBXGroup;
+			children = (
+				B3524A4824683754000BB462 /* scene_pass_factory.cpp */,
+				B3524A4624683569000BB462 /* frame_node.cpp */,
+				B3524A4424682DAA000BB462 /* scene_pass_context.cpp */,
+				B3524A42246826AF000BB462 /* scene_renderer.cpp */,
+			);
+			name = scene_renderer;
+			sourceTree = "<group>";
+		};
+		B3524A4C2468567A000BB462 /* scene_passes */ = {
+			isa = PBXGroup;
+			children = (
+				B3524A4D24685689000BB462 /* test_scene_pass.cpp */,
+			);
+			name = scene_passes;
+			sourceTree = "<group>";
+		};
 		B3AD1EF6246430F400730E61 /* third-party */ = {
 			isa = PBXGroup;
 			children = (
@@ -388,6 +421,7 @@
 		B3AD1F3124644C4400730E61 /* common */ = {
 			isa = PBXGroup;
 			children = (
+				B3524A4A2468501A000BB462 /* component.cpp */,
 				B379B1E32466B1CD00A434FD /* file.cpp */,
 				B379B1DF2466286300A434FD /* property_map.cpp */,
 				B3AD1F3A2464634C00730E61 /* log.cpp */,
@@ -518,19 +552,24 @@
 				B3AD1F1B2464319B00730E61 /* nsgl_context.m in Sources */,
 				B3AD1F2B2464350100730E61 /* glad_gl.c in Sources */,
 				85D8EB762465DAE70024EEB6 /* camera.cpp in Sources */,
+				B3524A4B2468501A000BB462 /* component.cpp in Sources */,
 				856EAE2C2465D4F100938D78 /* frame_buffer.cpp in Sources */,
 				B379B1EA2466CF7A00A434FD /* texture.cpp in Sources */,
 				85D8EB742465D5CA0024EEB6 /* node.cpp in Sources */,
 				856EAE252465D4E600938D78 /* geometry_mesh_factory.cpp in Sources */,
+				B3524A472468356A000BB462 /* frame_node.cpp in Sources */,
 				856EAE262465D4E600938D78 /* geometry_mesh.cpp in Sources */,
 				B3AD1F162464319B00730E61 /* osmesa_context.c in Sources */,
 				85D8EB7A2465DE100024EEB6 /* light.cpp in Sources */,
 				856EAE2B2465D4F100938D78 /* device.cpp in Sources */,
 				B3AD1F3B2464634C00730E61 /* log.cpp in Sources */,
 				B379B1E22466A34C00A434FD /* pass.cpp in Sources */,
+				B3524A43246826AF000BB462 /* scene_renderer.cpp in Sources */,
+				B3524A4524682DAA000BB462 /* scene_pass_context.cpp in Sources */,
 				B3F7F23C246707B8001C4D7E /* texture_list.cpp in Sources */,
 				851E34DE246718ED00B13F6B /* image.mm in Sources */,
 				B379B1DE246604A600A434FD /* shader.cpp in Sources */,
+				B3524A4E24685689000BB462 /* test_scene_pass.cpp in Sources */,
 				B3AD1F252464319B00730E61 /* cocoa_window.m in Sources */,
 				B3AD1F1C2464319B00730E61 /* cocoa_time.c in Sources */,
 				B3AD1F182464319B00730E61 /* posix_thread.c in Sources */,
@@ -540,6 +579,7 @@
 				B3AD1F012464315F00730E61 /* main.cpp in Sources */,
 				B379B1E82466BED200A434FD /* application_osx.mm in Sources */,
 				B3AD1F282464319B00730E61 /* monitor.c in Sources */,
+				B3524A4924683754000BB462 /* scene_pass_factory.cpp in Sources */,
 				B3AD1F272464319B00730E61 /* cocoa_monitor.m in Sources */,
 				B3AD1F292464319B00730E61 /* vulkan.c in Sources */,
 				B3AD1F2D2464354100730E61 /* egl_context.c in Sources */,

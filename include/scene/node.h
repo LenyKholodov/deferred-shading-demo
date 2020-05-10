@@ -1,9 +1,14 @@
 #pragma once
 
+#include <scene/visitor.h>
+
+#include <common/exception.h>
+
 #include <math/matrix.h>
 #include <math/quat.h>
 
 #include <memory>
+#include <typeinfo>
 
 namespace engine {
 namespace scene {
@@ -20,6 +25,9 @@ class Node : public std::enable_shared_from_this<Node>
     /// No copy
     Node(const Node&) = delete;
     Node& operator =(const Node&) = delete;
+
+    /// Root node
+    Pointer root() const;
 
     /// Node parent
     Pointer parent() const;
@@ -68,6 +76,21 @@ class Node : public std::enable_shared_from_this<Node>
 
     /// World space node transformations
     const math::mat4f& world_tm() const;
+
+    /// Visit scene
+    void traverse(ISceneVisitor&) const;
+
+    /// Store user data
+    template <class T> void set_user_data(const T& value);
+
+    /// Remove user data
+    template <class T> void reset_user_data();
+
+    /// Find user data (nullptr if no attachment)
+    template <class T> T* find_user_data() const;
+
+    /// Read user data
+    template <class T> T& get_user_data() const;
     
   protected:
     /// Constructor
@@ -76,9 +99,22 @@ class Node : public std::enable_shared_from_this<Node>
     /// Destructor
     virtual ~Node();
 
+    /// Visit node
+    virtual void visit(ISceneVisitor&);
+
+  private:
+    struct UserData;
+    template <class T> struct ConcreteUserData;
+    typedef std::shared_ptr<UserData> UserDataPtr;
+
+    void set_user_data_core(const std::type_info&, UserDataPtr&&);
+    UserDataPtr find_user_data_core(const std::type_info&) const;
+
   private:
     struct Impl;
     std::unique_ptr<Impl> impl;
 };
+
+#include <scene/detail/node.inl>
 
 }}

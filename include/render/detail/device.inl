@@ -47,6 +47,15 @@ inline void BindingContext::bind(const BindingContext* context)
   throw common::Exception::format("Can't link contexts; all parents are bound");
 }
 
+inline void BindingContext::unbind(const BindingContext* context)
+{
+  for (size_t i=0; i<sizeof(parent)/sizeof(*parent); i++)
+    if (parent[i] == context)
+    {
+      parent[i] = nullptr;
+    }
+}
+
 inline void BindingContext::bind(const TextureList& in_textures)
 {
   engine_check(textures == nullptr);
@@ -65,6 +74,11 @@ inline void BindingContext::bind(const Material& material)
 {
   bind(material.properties());
   bind(material.textures());
+}
+
+inline void BindingContext::unbind_all()
+{
+  *this = BindingContext();
 }
 
 template <class T, class Finder>

@@ -2,12 +2,16 @@
 #include <common/exception.h>
 #include <math/utility.h>
 
+#include <unordered_map>
+
 using namespace engine::common;
 using namespace engine::scene;
 
 /// Scene node
 struct Node::Impl
 {
+  typedef std::unordered_map<const std::type_info*, UserDataPtr> UserDataMap;
+
   Node* this_node; //pointer to this node
   std::weak_ptr<Node> parent; //parent node
   Node::Pointer first_child; //first child
@@ -21,6 +25,7 @@ struct Node::Impl
   math::mat4f world_tm; //world transformation matrix
   bool is_local_tm_dirty; //is local transformation matrix needs update
   bool is_world_tm_dirty; //is world transformation matrix needs update
+  UserDataMap user_data_map;
 
   /// Constructor
   Impl (Node* this_node)
@@ -111,6 +116,21 @@ Node::Pointer Node::create()
 Node::Pointer Node::parent() const
 {
   return impl->parent.lock();
+}
+
+Node::Pointer Node::root() const
+{
+  Node::Pointer root = const_cast<Node&>(*this).shared_from_this();
+
+  for (;;)
+  {
+    Node::Pointer parent = root->parent();
+
+    if (!parent)
+      return root;
+
+    root = parent;
+  }
 }
 
 Node::Pointer Node::first_child() const
@@ -211,4 +231,38 @@ const math::mat4f& Node::world_tm() const
   }
 
   return impl->world_tm;
+}
+
+void Node::traverse(ISceneVisitor& visitor) const
+{
+  const_cast<Node&>(*this).visit(visitor);
+
+  for (Node::Pointer it=first_child(); it; it=it->next_child())
+    it->traverse(visitor);
+}
+
+void Node::visit(ISceneVisitor& visitor)
+{
+  visitor.visit(*this);
+}
+
+void Node::set_user_data_core(const std::type_info& type, UserDataPtr&& user_data)
+{
+  if (!user_data)
+  {
+    impl->user_data_map.erase(&type);
+    return;
+  }
+
+  impl->user_data_map[&type] = user_data;
+}
+
+Node::UserDataPtr Node::find_user_data_core(const std::type_info& type) const
+{
+  auto it = impl->user_data_map.find(&type);
+
+  if (it == impl->user_data_map.end())
+    return nullptr;
+
+  return it->second;
 }

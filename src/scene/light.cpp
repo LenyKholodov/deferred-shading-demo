@@ -68,6 +68,13 @@ float Light::range() const
   return impl->range;
 }
 
+void Light::visit(ISceneVisitor& visitor)
+{
+  Node::visit(visitor);
+
+  visitor.visit(*this);
+}
+
 ///
 /// PointLight
 ///
@@ -75,6 +82,13 @@ float Light::range() const
 PointLight::Pointer PointLight::create()
 {
   return PointLight::Pointer(new PointLight);
+}
+
+void PointLight::visit(ISceneVisitor& visitor)
+{
+  Light::visit(visitor);
+
+  visitor.visit(*this);
 }
 
 ///
@@ -116,4 +130,11 @@ const math::anglef& SpotLight::angle() const
 float SpotLight::exponent() const
 {
   return impl->exponent;
+}
+
+void SpotLight::visit(ISceneVisitor& visitor)
+{
+  Light::visit(visitor);
+
+  visitor.visit(*this);
 }

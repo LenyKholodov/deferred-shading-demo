@@ -32,3 +32,10 @@ engine::media::geometry::Mesh& Mesh::mesh()
 {
   return impl->mesh;
 }
+
+void Mesh::visit(ISceneVisitor& visitor)
+{
+  Node::visit(visitor);
+
+  visitor.visit(*this);
+}

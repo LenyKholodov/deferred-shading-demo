@@ -57,14 +57,19 @@ void NamedDictionary<Value>::erase(const StringRef& name)
 
   auto range = storage.equal_range(name);
 
-  for (; range.first != range.second; ++range.first)
+  for (; range.first != range.second;)
   {
     auto& value_desc = range.first->second;
 
     if (name != value_desc.first)
+    {
+      ++range.first;
       continue;
+    }
 
-    storage.erase(range.first);
+    auto it = range.first++;
+
+    storage.erase(it);
   }
 }
 

@@ -43,6 +43,9 @@ class Light : public Node
     /// Constructor
     Light();
 
+    /// Visit node
+    void visit(ISceneVisitor&) override;
+
   private:
     struct Impl;
     std::unique_ptr<Impl> impl;
@@ -73,6 +76,9 @@ class SpotLight : public Light
     /// Constructor
     SpotLight();
 
+    /// Visit node
+    void visit(ISceneVisitor&) override;    
+
   private:
     struct Impl;
     std::unique_ptr<Impl> impl;
@@ -86,6 +92,10 @@ class PointLight : public Light
 
     /// Create light source
     static Pointer create();
+
+  protected:
+    /// Visit node
+    void visit(ISceneVisitor&) override;
 };
 
 }}

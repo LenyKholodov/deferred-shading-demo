@@ -56,6 +56,13 @@ void Camera::invalidate_projection_matrix()
   impl->is_projection_matrix_dirty = true;
 }
 
+void Camera::visit(ISceneVisitor& visitor)
+{
+  Node::visit(visitor);
+
+  visitor.visit(*this);
+}
+
 ///
 /// Perspective camera
 ///
@@ -149,4 +156,11 @@ float PerspectiveCamera::z_near() const
 float PerspectiveCamera::z_far() const
 {
   return impl->z_far;
+}
+
+void PerspectiveCamera::visit(ISceneVisitor& visitor)
+{
+  Camera::visit(visitor);
+
+  visitor.visit(*this);
 }

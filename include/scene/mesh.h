@@ -26,6 +26,9 @@ class Mesh: public Node
     /// Constructor
     Mesh();
 
+    /// Visit node
+    void visit(ISceneVisitor&) override;
+
   private:
     struct Impl;
     std::unique_ptr<Impl> impl;

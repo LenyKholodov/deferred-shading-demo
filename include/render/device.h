@@ -491,6 +491,9 @@ class BindingContext
     /// Bind parents
     void bind(const BindingContext*);
 
+    /// Unbind parents
+    void unbind(const BindingContext*);
+
     /// Bind texture list
     void bind(const TextureList&);
 
@@ -499,6 +502,9 @@ class BindingContext
 
     /// Bind material
     void bind(const Material&);
+
+    /// Unbind all
+    void unbind_all();
 
     /// Find property
     const Property* find_property(const char* name) const;

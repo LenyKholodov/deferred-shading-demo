@@ -28,6 +28,9 @@ class Application
     /// Notify application to exit
     void exit(int code = 0);
 
+    /// Current time
+    static double time();
+
     /// Idle function handler
     /// returns number of milliseconds to sleep
     typedef std::function<size_t ()> IdleHandler;

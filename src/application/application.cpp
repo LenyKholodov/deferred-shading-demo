@@ -127,3 +127,8 @@ void Application::main_loop(const IdleHandler& idle_fn)
 
   engine_log_info("Exited from application main loop");
 }
+
+double Application::time()
+{
+  return glfwGetTime();
+}

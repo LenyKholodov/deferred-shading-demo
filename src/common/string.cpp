@@ -228,4 +228,45 @@ std::string notdir(const char* src)
   return std::string(src);
 }
 
+bool wcmatch(const char* s, const char* pattern)
+{
+  if (!pattern && !s)
+    return true;
+
+  if (!pattern)
+    return false;
+
+  if (!s)
+    return false;
+
+  while (*s)
+    switch (*pattern)
+    {
+      case '\0':
+        return false;
+      case '*':
+        do pattern++; while (*pattern == '*' || *pattern == '?');
+        for (s=strchr(s,*pattern);s && !wcmatch(s,pattern);s=strchr(s+1,*pattern));
+
+        return s != NULL;
+      case '?':
+        return wcmatch(s,pattern+1) || wcmatch(s+1,pattern+1);
+      default:
+        if (*pattern++ != *s++)
+          return false;
+
+        break;
+    }
+   
+  while (*pattern)
+    switch (*pattern++)
+    {
+      case '*':
+      case '?': break;
+      default:  return false;     
+    }
+
+  return true;
+}
+
 }}
