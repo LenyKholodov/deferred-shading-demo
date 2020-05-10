@@ -28,6 +28,11 @@ void MaterialList::insert(const char* name, const Material& material)
   impl->materials.insert(name, material);
 }
 
+void MaterialList::remove(const char* name)
+{
+  impl->materials.erase(name);
+}
+
 Material* MaterialList::find(const char* name) const
 {
   return impl->materials.find(name);

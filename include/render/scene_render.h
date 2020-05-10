@@ -17,6 +17,7 @@ using low_level::DeviceOptions;
 class SceneRenderer;
 class ISceneRenderer;
 class FrameNode;
+class FrameNodeList;
 
 /// Frame identifier
 typedef size_t FrameId;
@@ -48,6 +49,9 @@ class ScenePassContext
 
     /// Shared rendered materials
     low_level::MaterialList& materials() const;
+
+    /// Shared frame nodes
+    FrameNodeList& frame_nodes() const;
 
     /// Scene root node
     Node::Pointer root_node() const;
@@ -112,6 +116,33 @@ class FrameNode
 
     /// Render frame
     void render(ScenePassContext& context);
+
+  private:
+    struct Impl;
+    std::shared_ptr<Impl> impl;
+};
+
+/// Frame node list
+class FrameNodeList
+{
+  public:
+    /// List of nodes
+    FrameNodeList();
+
+    /// Nodes count
+    size_t count() const;
+
+    /// Add node
+    void insert(const char* name, const FrameNode& node);
+
+    /// Remove node
+    void remove(const char* name);
+
+    /// Find node by name
+    FrameNode* find(const char* name) const;
+
+    /// Get node by name or throw exception
+    FrameNode& get(const char* name) const;
 
   private:
     struct Impl;
@@ -220,6 +251,9 @@ class SceneRenderer
 
     /// Shared rendered materials
     low_level::MaterialList& materials() const;
+
+    /// Shared frame nodes
+    FrameNodeList& frame_nodes() const;
 
   private:
     struct Impl;

@@ -119,6 +119,7 @@ struct SceneRenderer::Impl : ISceneRenderer
   Device render_device; //rendering device
   TextureList shared_textures; //shared textures
   MaterialList shared_materials; //shared materials
+  FrameNodeList shared_frame_nodes; //shared frame_nodes
   common::PropertyMap shared_properties; //shared propertiess
   ScenePassContextImpl passes_context; //scene rendering context
   PassArray passes; //scene rendering passes
@@ -135,6 +136,7 @@ struct SceneRenderer::Impl : ISceneRenderer
   PropertyMap& properties() override { return shared_properties; }
   TextureList& textures() override { return shared_textures; }
   MaterialList& materials() override { return shared_materials; }
+  FrameNodeList& frame_nodes() override { return shared_frame_nodes; } 
   Device& device() override { return render_device; }
 };
 
@@ -367,4 +369,9 @@ TextureList& SceneRenderer::textures() const
 MaterialList& SceneRenderer::materials() const
 {
   return impl->shared_materials;
+}
+
+FrameNodeList& SceneRenderer::frame_nodes() const
+{
+  return impl->shared_frame_nodes;
 }

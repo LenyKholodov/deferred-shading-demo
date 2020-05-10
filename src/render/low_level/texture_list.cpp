@@ -28,6 +28,11 @@ void TextureList::insert(const char* name, const Texture& texture)
   impl->textures.insert(name, texture);
 }
 
+void TextureList::remove(const char* name)
+{
+  impl->textures.erase(name);
+}
+
 Texture* TextureList::find(const char* name) const
 {
   return impl->textures.find(name);

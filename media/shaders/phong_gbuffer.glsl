@@ -6,7 +6,7 @@ in vec4 vColor;
 in vec3 vPosition;
 in vec3 vNormal;
 in vec2 vTexCoord;
-out vec3 position;
+out vec4 position;
 out vec3 eyeDirection;
 out vec3 normal;
 out vec4 color;
@@ -17,7 +17,8 @@ const vec3 VIEW_POS = vec3(0.0, 0.0, -10.0); // camera_position
 void main()
 {
   gl_Position = MVP * vec4(vPosition, 1.0);
-  position = gl_Position.xyz;
+  //position = gl_Position.xyz;
+  position = MVP * vec4(vPosition, 1.0);
   eyeDirection = VIEW_POS - gl_Position.xyz;
   normal = normalize (MVP * vec4 (vNormal, 0.0)).xyz;
   color = vColor;
@@ -32,7 +33,7 @@ layout(location = 1) out vec3 outNormal;
 layout(location = 2) out vec4 outAlbedo;
 layout(location = 3) out vec4 outSpecular;
 
-in vec3 position;
+in vec4 position;
 in vec3 eyeDirection;
 in vec3 normal;
 in vec4 color;
@@ -73,7 +74,7 @@ void main()
 
   mappedNormal = normalize(tbn * mappedNormal);
 
-  outPosition = position;
+  outPosition = position.xyz;
   outNormal = mappedNormal;
   outAlbedo = texture(diffuseTexture, texCoord) * color;
   outSpecular = vec4(texture(specularTexture, texCoord).xyz * color.xyz, shininess);

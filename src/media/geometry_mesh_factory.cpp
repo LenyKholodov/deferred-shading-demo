@@ -18,7 +18,7 @@ const size_t SPHERE_MERIDIANS_COUNT = 32;
 /// Mesh factory
 
 /// Create simple geometry objects
-Mesh MeshFactory::create_box(const char* material, float width, float height, float depth)
+Mesh MeshFactory::create_box(const char* material, float width, float height, float depth, const math::vec3f& offset)
 {
   Mesh return_value;
 
@@ -43,13 +43,13 @@ Mesh MeshFactory::create_box(const char* material, float width, float height, fl
       vertex.color  = 1.f;
     }
 
-    base_vertex[0].position  = (normal + corner1) * size;
+    base_vertex[0].position  = offset + (normal + corner1) * size;
     base_vertex[0].tex_coord = vec2f(0.f, 1.f);
-    base_vertex[1].position  = (normal + corner2) * size;
+    base_vertex[1].position  = offset + (normal + corner2) * size;
     base_vertex[1].tex_coord = vec2f(1.f, 1.f);
-    base_vertex[2].position  = (normal - corner1) * size;
+    base_vertex[2].position  = offset + (normal - corner1) * size;
     base_vertex[2].tex_coord = vec2f(1.f, 0.f);
-    base_vertex[3].position  = (normal - corner2) * size;
+    base_vertex[3].position  = offset + (normal - corner2) * size;
     base_vertex[3].tex_coord = vec2f(0.f, 0.f);
 
     Mesh::index_type* base_index = indices + i * 6;
@@ -67,7 +67,7 @@ Mesh MeshFactory::create_box(const char* material, float width, float height, fl
   return return_value;
 }
 
-Mesh MeshFactory::create_sphere(const char* material, float radius)
+Mesh MeshFactory::create_sphere(const char* material, float radius, const math::vec3f& offset)
 {
   Mesh return_value;
     
@@ -84,6 +84,8 @@ Mesh MeshFactory::create_sphere(const char* material, float radius)
 
   vertices[0].normal = vec3f(0.f, 1.f, 0.f);
   vertices[1].normal = vec3f(0.f, -1.f, 0.f);
+  vertices[0].tex_coord = vec2f(0.f, 0.f);
+  vertices[1].tex_coord = vec2f(0.f, 1.f);
 
   float current_horizontal_angle = 0.f;
 
@@ -105,6 +107,7 @@ Mesh MeshFactory::create_sphere(const char* material, float radius)
       float r = sin(current_vertical_angle);
 
       current_vertex->normal = vec3f(r * x, cos(current_vertical_angle), r * z);
+      current_vertex->tex_coord = vec2f(current_horizontal_angle / constf::pi / 2.f, (current_vertical_angle + constf::pi / 2.f) / constf::pi);
     }
   }
 
@@ -148,8 +151,7 @@ Mesh MeshFactory::create_sphere(const char* material, float radius)
     Vertex& vertex = vertices[i];
 
     vertex.color     = 1.f;
-    vertex.position  = vertex.normal * radius;
-    vertex.tex_coord = abs(vec2f(vertex.normal.x, vertex.normal.y));
+    vertex.position  = offset + vertex.normal * radius;
   }
 
   return_value.add_primitive(material, PrimitiveType_TriangleList, vertices, sizeof(vertices) / sizeof(*vertices), indices, sizeof(indices) / sizeof(*indices));

@@ -11,6 +11,10 @@ using namespace engine::common;
 static constexpr size_t RESERVED_PASSES_COUNT = 8;
 static constexpr size_t RESERVED_DEPENDENCIES_COUNT = 8;
 
+///
+/// FrameNode
+///
+
 namespace
 {
 
@@ -131,4 +135,51 @@ void FrameNode::render(ScenePassContext& context)
 
   impl->deps.clear();
   impl->passes.clear();
+}
+
+///
+/// FrameNodeList
+///
+
+typedef NamedDictionary<FrameNode> FrameNodeDict;
+
+/// Implementation details of frame node list
+struct FrameNodeList::Impl
+{
+  FrameNodeDict nodes; //dictionary of nodes
+};
+
+FrameNodeList::FrameNodeList()
+  : impl(std::make_shared<Impl>())
+{
+}
+
+size_t FrameNodeList::count() const
+{
+  return impl->nodes.size();
+}
+
+void FrameNodeList::insert(const char* name, const FrameNode& node)
+{
+  engine_check_null(name);
+
+  impl->nodes.insert(name, node);
+}
+
+void FrameNodeList::remove(const char* name)
+{
+  impl->nodes.erase(name);
+}
+
+FrameNode* FrameNodeList::find(const char* name) const
+{
+  return impl->nodes.find(name);
+}
+
+FrameNode& FrameNodeList::get(const char* name) const
+{
+  if (FrameNode* node = find(name))
+    return *node;
+
+  throw Exception::format("Frame node '%s' has not been found", name);
 }

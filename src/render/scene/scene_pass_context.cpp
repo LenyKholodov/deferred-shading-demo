@@ -69,6 +69,11 @@ BindingContext& ScenePassContext::bindings() const
   return impl->bindings;
 }
 
+FrameNodeList& ScenePassContext::frame_nodes() const
+{
+  return impl->renderer.frame_nodes();
+}
+
 PropertyMap& ScenePassContext::properties() const
 {
   return impl->renderer.properties();

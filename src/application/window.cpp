@@ -149,6 +149,15 @@ struct Window::Impl
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true); 
 
+      //if width and height was not requested, create full screen window
+    if (!width && !height)
+    {
+      const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+      width = mode->width / 2;
+      height = mode->height / 2;
+    }
+
     window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
 
     if (!window)

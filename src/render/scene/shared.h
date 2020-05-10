@@ -26,6 +26,9 @@ class ISceneRenderer
     /// Shared rendered materials
     virtual low_level::MaterialList& materials() = 0;
 
+    /// Shared frame nodes
+    virtual FrameNodeList& frame_nodes() = 0;
+
     /// Rendering device
     virtual low_level::Device& device() = 0;
 

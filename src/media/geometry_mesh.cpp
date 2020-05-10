@@ -113,6 +113,71 @@ struct Mesh::Impl
 
     return return_value;
   }
+
+  Mesh merge_primitives()
+  {
+    Mesh return_value;
+
+    uint32_t vertices_count = static_cast<uint32_t>(vertices_data.size()),
+             indices_count  = static_cast<uint32_t>(indices_data.size());
+
+      //allocate memory
+
+    return_value.vertices_resize(vertices_count);
+    return_value.indices_resize(indices_count);
+
+      //copy data
+    Vertex* first_vertex = return_value.vertices_data();
+    index_type* first_index = return_value.indices_data();
+    Vertex* current_vertex = first_vertex;
+    index_type* current_index = first_index;
+
+    PrimitiveArray primitives_to_process = primitives;
+
+    while (!primitives_to_process.empty())
+    {
+      std::string current_material = primitives_to_process.back().material;
+      PrimitiveType current_primitive_type = primitives_to_process.back().type;
+      size_t current_index_index = current_index - first_index;
+      size_t current_vertex_index = current_vertex - first_vertex;
+      size_t copied_triangles_count = 0;
+      size_t copied_vertices_count = 0;
+
+      for (int i = (int)primitives_to_process.size() - 1; i >= 0; i--)
+      {
+        const Primitive& primitive = primitives_to_process[i];
+
+        if (primitive.material != current_material || primitive.type != current_primitive_type)
+          continue;
+
+        size_t primitive_vertices_count = 0;
+        size_t primitive_indices_count = primitive.count * 3;
+
+        index_type* first_primitive_index = indices_data.data() + primitive.first * 3;
+        index_type* source_index = first_primitive_index;
+
+        for (size_t j = 0; j < primitive_indices_count; j++, source_index++)
+          primitive_vertices_count = std::max((size_t)*source_index + 1, primitive_vertices_count);
+
+        memcpy(current_vertex, vertices_data.data() + primitive.base_vertex, primitive_vertices_count * sizeof(Vertex));
+        memcpy(current_index, first_primitive_index, primitive_indices_count * sizeof(index_type));
+
+        for (size_t j = 0; j < primitive_indices_count; j++, current_index++)
+          *current_index += copied_vertices_count;
+
+        copied_vertices_count += primitive_vertices_count;
+        current_vertex += primitive_vertices_count;
+
+        copied_triangles_count += primitive.count;
+
+        primitives_to_process.erase(primitives_to_process.begin() + i);
+      }
+
+      return_value.add_primitive(current_material.c_str(), current_primitive_type, (uint32_t)current_index_index, (uint32_t)copied_triangles_count, (uint32_t)current_vertex_index);
+    }
+
+    return return_value;
+  }
 };
 
 /// Mesh
@@ -232,13 +297,16 @@ void Mesh::remove_all_primitives()
   impl->primitives.clear();
 }
 
-/// Clear all data
 Mesh Mesh::merge(const Mesh& mesh) const
 {
   return impl->merge(mesh);
 }
 
-/// Clear all data
+Mesh Mesh::merge_primitives() const
+{
+  return impl->merge_primitives();
+}
+
 void Mesh::clear()
 {
   remove_all_primitives();

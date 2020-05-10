@@ -104,6 +104,9 @@ class Mesh
     /// Return mesh containing combined data from this mesh and other mesh
     Mesh merge(const Mesh& mesh) const;
 
+    /// Return optimized mesh containing only one primitive for each material
+    Mesh merge_primitives() const;
+
     /// Clear all data
     void clear();
 
@@ -117,8 +120,8 @@ class MeshFactory
 {
   public:
     /// create simple geometry objects
-    static Mesh create_box(const char* material, float width, float height, float depth);
-    static Mesh create_sphere(const char* material, float radius);
+    static Mesh create_box(const char* material, float width, float height, float depth, const math::vec3f& offset = math::vec3f());
+    static Mesh create_sphere(const char* material, float radius, const math::vec3f& offset = math::vec3f());
 };
 
 }}}

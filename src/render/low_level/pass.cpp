@@ -183,8 +183,6 @@ struct Pass::Impl
 
     math::mat4f mvp = view_projection_tm * primitive.model_tm;
 
-    math::vec4f p = mvp * math::vec4f(0, 0, 0, 1);
-
     dynamic_properties.set("MVP", mvp);
 
       //setup shader parameters and textures
@@ -348,23 +346,23 @@ struct Pass::Impl
         break;
       case PropertyType_FloatArray:
         ArrayChecker<float>::check(program, property, param);
-        glUniform1fv(param.location, elements_count, &property.get<float>());
+        glUniform1fv(param.location, elements_count, &property.get<std::vector<float>>()[0]);
         break;
       case PropertyType_Vec2fArray:
         ArrayChecker<math::vec2f>::check(program, property, param);
-        glUniform2fv(param.location, elements_count, &property.get<math::vec2f>()[0]);
+        glUniform2fv(param.location, elements_count, &property.get<std::vector<math::vec2f>>()[0][0]);
         break;
       case PropertyType_Vec3fArray:
         ArrayChecker<math::vec3f>::check(program, property, param);
-        glUniform3fv(param.location, elements_count, &property.get<math::vec3f>()[0]);
+        glUniform3fv(param.location, elements_count, &property.get<std::vector<math::vec3f>>()[0][0]);
         break;
       case PropertyType_Vec4fArray:
         ArrayChecker<math::vec4f>::check(program, property, param);
-        glUniform4fv(param.location, elements_count, &property.get<math::vec4f>()[0]);
+        glUniform4fv(param.location, elements_count, &property.get<std::vector<math::vec4f>>()[0][0]);
         break;
       case PropertyType_Mat4fArray:
         ArrayChecker<math::mat4f>::check(program, property, param);
-        glUniformMatrix4fv(param.location, elements_count, GL_TRUE, &property.get<math::mat4f>()[0][0]);
+        glUniformMatrix4fv(param.location, elements_count, GL_TRUE, &property.get<std::vector<math::mat4f>>()[0][0][0]);
         break;
       default:
         throw Exception::format("Unexpected program '%s' parameter '%s' type %s",

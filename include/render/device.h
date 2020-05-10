@@ -182,6 +182,9 @@ class TextureList
     /// Add texture
     void insert(const char* name, const Texture& texture);
 
+    /// Remove texture
+    void remove(const char* name);
+
     /// Find texture by name
     Texture* find(const char* name) const;
 
@@ -218,11 +221,14 @@ class MaterialList
     /// List of materials
     MaterialList();
 
-    /// Textures count
+    /// Material count
     size_t count() const;
 
     /// Add material
     void insert(const char* name, const Material& material);
+
+    /// Remove texture
+    void remove(const char* name);
 
     /// Find material by name
     Material* find(const char* name) const;

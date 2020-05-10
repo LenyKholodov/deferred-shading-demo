@@ -121,7 +121,7 @@ class Window
 {
   public:
     /// Constructor
-    Window(const char* title, unsigned int width, unsigned int height);
+    Window(const char* title, unsigned int width = 0, unsigned int height = 0);
 
     /// Window handle
     GLFWwindow* handle() const;
