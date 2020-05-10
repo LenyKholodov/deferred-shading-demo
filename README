@@ -1,0 +1,43 @@
+# Overview
+
+Simple implementation of deferred rendering technique
+
+# Build
+
+1. git submodule update --recursive --init
+2. Open TestTask.xcodeproj in XCode
+3. Build & Run
+
+# Controls
+
+Keyboard:
+  - W - move forward
+  - S - move backwards
+  - A - move left
+  - D - move right
+
+Mouse:
+  - left button + move - change camera orientation
+
+# Task status
+
+1. Deferred lighting
+  - point lights have been implemented
+  - spot light has been implemented
+  - shadow maps not completed (due to lack of time); there is a bug with shadow matrix projection, shadow disappears from time to time
+2. Scene graph implemented: node, mesh, point light, spot light, perspective camera
+3. 2D textures implemented; images loading only for OSX (platform dependent code)
+4. Rendering system: OpenGL bases, low level device layer, scene renderer layer, low level & scene passes
+5. Application & Window abstractions have been implemented (on top of GLFW)
+6. Projectiles / Decals have not implemented (due to lack of time)
+
+# Structure
+
+- common - utilities
+- scene - scene graph basic nodes simplified implementation
+- render/device.h - low level rendering layer
+- render/scene_render.h - scene render layer
+- src/render/scene_passes - scene render passes implementation
+- media - library for geometry and images
+- application - system utilities layer (application model & window)
+- launcher - demo application

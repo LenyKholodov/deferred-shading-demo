@@ -124,7 +124,7 @@ struct GBufferPass : IScenePass
         renderable_mesh = &mesh.set_user_data(RenderableMesh(mesh, context));
       }
 
-        //add mess to pass
+        //add mesh to pass
 
       g_buffer_pass.add_mesh(renderable_mesh->mesh, mesh.world_tm());
     }
@@ -170,6 +170,7 @@ struct DeferredLightingPass : IScenePass
 
     void get_dependencies(std::vector<std::string>& deps)
     {
+      deps.push_back("Shadow Maps Rendering");
       deps.push_back("G-Buffer");
     }
 
@@ -227,6 +228,7 @@ struct DeferredLightingPass : IScenePass
       spot_light_ranges.clear();
       spot_light_angles.clear();
       spot_light_exponents.clear();
+      spot_lights_shadow_matrices.clear();
     }
 
   private:
@@ -235,7 +237,6 @@ struct DeferredLightingPass : IScenePass
         //setup lights
 
       common::PropertyMap properties = frame.properties();
-      const math::mat4f& view_projection_tm = context.view_projection_tm();
 
       static constexpr size_t MAX_LIGHTS_COUNT = 32; //TODO: batch light rendering in several passes
 
@@ -250,8 +251,13 @@ struct DeferredLightingPass : IScenePass
 
       for (auto& light : lights)
       {
-        math::vec3f position = view_projection_tm * light->world_tm() * math::vec3f(0, 0, 0, 1.0f);
-        math::vec3f color = light->light_color() * light->intensity();
+        float intensity = light->intensity();
+
+        if (intensity < 0)
+          intensity = 0;
+
+        math::vec3f position = light->world_tm() * math::vec3f(0, 0, 0, 1.0f);
+        math::vec3f color = light->light_color() * intensity;
         math::vec3f attenuation = light->attenuation();
         float range = light->range();
 
@@ -265,16 +271,16 @@ struct DeferredLightingPass : IScenePass
       {
         point_light_positions.push_back(0.0f);
         point_light_colors.push_back(0.0f);
-        point_light_attenuations.push_back(0.0f);
-        point_light_ranges.push_back(1.0f);
+        point_light_attenuations.push_back(math::vec3f(1.0f));
+        point_light_ranges.push_back(0.0f);
       }
 
         //bind properties
 
-      properties.set("point_light_positions", point_light_positions);
-      properties.set("point_light_colors", point_light_colors);
-      properties.set("point_light_attenuations", point_light_attenuations);
-      properties.set("point_light_ranges", point_light_ranges);
+      properties.set("pointLightPositions", point_light_positions);
+      properties.set("pointLightColors", point_light_colors);
+      properties.set("pointLightAttenuations", point_light_attenuations);
+      properties.set("pointLightRanges", point_light_ranges);
     }
 
     void setup_spot_lights(const SpotLightArray& lights, ScenePassContext& context)
@@ -282,7 +288,6 @@ struct DeferredLightingPass : IScenePass
         //setup lights
 
       common::PropertyMap properties = frame.properties();
-      const math::mat4f& view_projection_tm = context.view_projection_tm();
 
       static constexpr size_t MAX_LIGHTS_COUNT = 2; //TODO: batch light rendering in several passes
 
@@ -300,14 +305,29 @@ struct DeferredLightingPass : IScenePass
 
       for (auto& light : lights)
       {
-        math::vec3f position = view_projection_tm * light->world_tm() * math::vec3f(0, 0, 0, 1.0f);
-        math::vec3f direction = view_projection_tm * light->world_tm() * math::vec3f(0, 0, 0, 0);
-        math::vec3f color = light->light_color() * light->intensity();
+        float intensity = light->intensity();
+
+        if (intensity < 0)
+          intensity = 0;
+
+        math::vec3f position = light->world_tm() * math::vec3f(0, 0, 0, 1.0f);
+        math::vec3f direction = normalize(math::vec3f(light->world_tm() * math::vec3f(0, 0, 1.0f, 0)));
+        math::vec3f color = light->light_color() * intensity;
         math::vec3f attenuation = light->attenuation();
         float range = light->range();
-        float angle = math::radian(light->angle());
+        float angle = math::radian(light->angle()) / 2;
         float exponent = light->exponent();
+        Shadow* shadow = light->find_user_data<Shadow>();
+        const math::mat4f& shadow_tm = shadow->shadow_tm;
 
+        engine_check(shadow);
+        
+          //TODO: texture arrays binding to shader program
+        deferred_lighting_pass.textures().remove("shadowTexture");
+        deferred_lighting_pass.textures().insert("shadowTexture", shadow->shadow_texture);
+
+        frame.add_dependency(shadow->shadow_frame);
+        
         spot_light_positions.push_back(position);
         spot_light_directions.push_back(direction);
         spot_light_colors.push_back(color);
@@ -315,6 +335,7 @@ struct DeferredLightingPass : IScenePass
         spot_light_ranges.push_back(range);
         spot_light_angles.push_back(angle);
         spot_light_exponents.push_back(exponent);
+        spot_lights_shadow_matrices.push_back(shadow_tm);
       }
 
       for (size_t i=lights.size(); i<MAX_LIGHTS_COUNT; i++)
@@ -322,24 +343,27 @@ struct DeferredLightingPass : IScenePass
         spot_light_positions.push_back(0.0f);
         spot_light_directions.push_back(math::vec3f(0, 0, 1.0f));
         spot_light_colors.push_back(0.0f);
-        spot_light_attenuations.push_back(0.0f);
-        spot_light_ranges.push_back(1.0f);
-        spot_light_angles.push_back(1.0f);
-        spot_light_exponents.push_back(0.0f);
+        spot_light_attenuations.push_back(math::vec3f(1.0f));
+        spot_light_ranges.push_back(0.f);
+        spot_light_angles.push_back(M_PI);
+        spot_light_exponents.push_back(1.0f);
+        spot_lights_shadow_matrices.push_back(0.0f);
       }
 
         //bind properties
 
-      properties.set("spot_light_positions", spot_light_positions);
-      properties.set("spot_light_directions", spot_light_directions);
-      properties.set("spot_light_colors", spot_light_colors);
-      properties.set("spot_light_attenuations", spot_light_attenuations);
-      properties.set("spot_light_ranges", spot_light_ranges);
-      properties.set("spot_light_angles", spot_light_angles);
-      properties.set("spot_light_exponents", spot_light_exponents);
-    }    
+      properties.set("spotLightPositions", spot_light_positions);
+      properties.set("spotLightDirections", spot_light_directions);
+      properties.set("spotLightColors", spot_light_colors);
+      properties.set("spotLightAttenuations", spot_light_attenuations);
+      properties.set("spotLightRanges", spot_light_ranges);
+      properties.set("spotLightAngles", spot_light_angles);
+      properties.set("spotLightExponents", spot_light_exponents);
+      properties.set("spotLightShadowMatrices", spot_lights_shadow_matrices);
+    }
 
   private:
+    typedef std::vector<math::mat4f> Mat4fArray;
     typedef std::vector<math::vec3f> Vec3fArray;
     typedef std::vector<float> FloatArray;
 
@@ -362,6 +386,7 @@ struct DeferredLightingPass : IScenePass
     FloatArray spot_light_ranges;
     FloatArray spot_light_angles;
     FloatArray spot_light_exponents;
+    Mat4fArray spot_lights_shadow_matrices;
 };
 
 ///

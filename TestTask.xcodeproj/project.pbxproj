@@ -67,6 +67,7 @@
 		B3F7F23A2467079E001C4D7E /* material.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3F7F2392467079E001C4D7E /* material.cpp */; };
 		B3F7F23C246707B8001C4D7E /* texture_list.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3F7F23B246707B8001C4D7E /* texture_list.cpp */; };
 		B3F7F23E2467186F001C4D7E /* material_list.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3F7F23D2467186F001C4D7E /* material_list.cpp */; };
+		B3FB10FB2468B3AB00F5E2C3 /* shadow_render_passes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3FB10FA2468B3AB00F5E2C3 /* shadow_render_passes.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -110,6 +111,7 @@
 		85FC3D7524645D8C0023D0E2 /* quat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = quat.h; sourceTree = "<group>"; };
 		85FC3D7624645D8C0023D0E2 /* utility.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utility.h; sourceTree = "<group>"; };
 		85FC3D7724645D8C0023D0E2 /* vector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vector.h; sourceTree = "<group>"; };
+		B327D3FE2469315F007B590D /* scene_render.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = scene_render.h; path = ../../include/render/scene_render.h; sourceTree = "<group>"; };
 		B3524A42246826AF000BB462 /* scene_renderer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = scene_renderer.cpp; path = src/render/scene/scene_renderer.cpp; sourceTree = "<group>"; };
 		B3524A4424682DAA000BB462 /* scene_pass_context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = scene_pass_context.cpp; path = src/render/scene/scene_pass_context.cpp; sourceTree = "<group>"; };
 		B3524A4624683569000BB462 /* frame_node.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = frame_node.cpp; path = src/render/scene/frame_node.cpp; sourceTree = "<group>"; };
@@ -155,6 +157,7 @@
 		B3F7F2392467079E001C4D7E /* material.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = material.cpp; path = src/render/low_level/material.cpp; sourceTree = "<group>"; };
 		B3F7F23B246707B8001C4D7E /* texture_list.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = texture_list.cpp; path = src/render/low_level/texture_list.cpp; sourceTree = "<group>"; };
 		B3F7F23D2467186F001C4D7E /* material_list.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = material_list.cpp; path = src/render/low_level/material_list.cpp; sourceTree = "<group>"; };
+		B3FB10FA2468B3AB00F5E2C3 /* shadow_render_passes.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = shadow_render_passes.cpp; path = src/render/scene_passes/shadow_render_passes.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -224,6 +227,7 @@
 		856EAE122465D3E900938D78 /* render */ = {
 			isa = PBXGroup;
 			children = (
+				B327D3FE2469315F007B590D /* scene_render.h */,
 				856EAE142465D45500938D78 /* device.h */,
 			);
 			name = render;
@@ -372,6 +376,7 @@
 		B3524A4C2468567A000BB462 /* scene_passes */ = {
 			isa = PBXGroup;
 			children = (
+				B3FB10FA2468B3AB00F5E2C3 /* shadow_render_passes.cpp */,
 				B3524A5124686E9D000BB462 /* scene_visitor.cpp */,
 				B3524A4F246867BB000BB462 /* deferred_render_passes.cpp */,
 				B3524A4D24685689000BB462 /* test_scene_pass.cpp */,
@@ -579,6 +584,7 @@
 				B3F7F23C246707B8001C4D7E /* texture_list.cpp in Sources */,
 				851E34DE246718ED00B13F6B /* image.mm in Sources */,
 				B379B1DE246604A600A434FD /* shader.cpp in Sources */,
+				B3FB10FB2468B3AB00F5E2C3 /* shadow_render_passes.cpp in Sources */,
 				B3524A4E24685689000BB462 /* test_scene_pass.cpp in Sources */,
 				B3AD1F252464319B00730E61 /* cocoa_window.m in Sources */,
 				B3AD1F1C2464319B00730E61 /* cocoa_time.c in Sources */,

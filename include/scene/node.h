@@ -71,6 +71,12 @@ class Node : public std::enable_shared_from_this<Node>
     /// Set node scale
     void set_scale(const math::vec3f&);
 
+    /// Look to
+    void look_to(const math::vec3f& target_point, const math::vec3f& up);
+
+    /// Look to in world space
+    void world_look_to(const math::vec3f& target_point, const math::vec3f& up);
+
     /// Local space node transformations
     const math::mat4f& local_tm() const;
 

@@ -20,6 +20,7 @@ uniform sampler2D positionTexture;
 uniform sampler2D normalTexture;
 uniform sampler2D albedoTexture;
 uniform sampler2D specularTexture;
+uniform sampler2D shadowTexture;
 
 in vec2 texCoord;
 out vec4 outColor;
@@ -27,23 +28,28 @@ out vec4 outColor;
 const float MIN_DIFFUSE_AMOUNT = 0.1; // ambient light
 const float DIFFUSE_AMOUNT = 1.0; // diffuse light multiplier
 const float SPECULAR_AMOUNT = 1.0; // specular light multiplier
-const vec3 VIEW_POS = vec3(0.0, 0.0, 0.0); // camera position
+const float SHININESS_NORMALIZER = 1000.0f; // workaround for RGBA8 precision for shininess
+
+const vec2 ShadowMapPixelSize = vec2(1.0 / 1024, 1.0 / 1024);
 
 #define MAX_POINT_LIGHTS 32
 #define MAX_SPOT_LIGHTS 2
 
-uniform vec3 point_light_positions[MAX_POINT_LIGHTS];
-uniform vec3 point_light_colors[MAX_POINT_LIGHTS];
-uniform vec3 point_light_attenuations[MAX_POINT_LIGHTS];
-uniform float point_light_ranges[MAX_POINT_LIGHTS];
+uniform vec3 worldViewPosition;
 
-uniform vec3 spot_light_positions[MAX_SPOT_LIGHTS];
-uniform vec3 spot_light_directions[MAX_SPOT_LIGHTS];
-uniform vec3 spot_light_colors[MAX_SPOT_LIGHTS];
-uniform vec3 spot_light_attenuations[MAX_SPOT_LIGHTS];
-uniform float spot_light_ranges[MAX_SPOT_LIGHTS];
-uniform float spot_light_angles[MAX_SPOT_LIGHTS];
-uniform float spot_light_exponents[MAX_SPOT_LIGHTS];
+uniform vec3 spotLightPositions[MAX_SPOT_LIGHTS];
+uniform vec3 spotLightDirections[MAX_SPOT_LIGHTS];
+uniform vec3 spotLightColors[MAX_SPOT_LIGHTS];
+uniform vec3 spotLightAttenuations[MAX_SPOT_LIGHTS];
+uniform float spotLightRanges[MAX_SPOT_LIGHTS];
+uniform float spotLightAngles[MAX_SPOT_LIGHTS];
+uniform float spotLightExponents[MAX_SPOT_LIGHTS];
+uniform mat4 spotLightShadowMatrices[MAX_SPOT_LIGHTS];
+
+uniform vec3 pointLightPositions[MAX_POINT_LIGHTS];
+uniform vec3 pointLightColors[MAX_POINT_LIGHTS];
+uniform vec3 pointLightAttenuations[MAX_POINT_LIGHTS];
+uniform float pointLightRanges[MAX_POINT_LIGHTS];
 
 vec3 ComputeDiffuseColor(const in vec3 normal, const in vec3 lightDir, const in vec3 texDiffuseColor)
 {
@@ -52,9 +58,39 @@ vec3 ComputeDiffuseColor(const in vec3 normal, const in vec3 lightDir, const in 
 
 vec3 ComputeSpecularColor(const in vec3 normal, const in vec3 lightDir, const in vec3 eyeDir, const in vec3 texSpecularColor, const in float shininess)
 {
-  float specularFactor = pow(clamp(dot(reflect(-lightDir, normal), eyeDir), 0.00001, 1.0), shininess);
+  float specularFactor = pow(clamp(dot(reflect(-lightDir, normal), eyeDir), 0.00001, 1.0), shininess * SHININESS_NORMALIZER);
 
   return texSpecularColor * specularFactor;
+}
+
+float OffsetLookup(vec4 shadowTexCoord, vec2 offset)
+{
+  float shadowDepth = texture(shadowTexture, shadowTexCoord.xy + offset * ShadowMapPixelSize * shadowTexCoord.w).x + 0.0001;
+
+  if (shadowDepth < shadowTexCoord.z)
+  {
+    return shadowTexCoord.z - shadowDepth;
+  }
+ 
+  return 1.0;
+}
+
+float PCF(in vec4 shadowTexCoord)
+{
+  float sum = 0.0;
+  float y = -1.5;
+
+  const int STEPS_COUNT = 3;
+
+  for (int i=0; i<STEPS_COUNT; i++, y += 1.5)
+  { 
+    float x = -1.5;
+
+    for (int j=0; j<STEPS_COUNT; j++, x+= 1.5)
+      sum += OffsetLookup(shadowTexCoord, vec2(x, y));
+  }
+
+  return sum / float (STEPS_COUNT * STEPS_COUNT);
 }
 
 void main()
@@ -63,67 +99,91 @@ void main()
   vec3 normal = texture(normalTexture, texCoord).xyz;
   vec3 albedo = texture(albedoTexture, texCoord).xyz;
   vec4 specular = texture(specularTexture, texCoord);
+  vec3 eyeDirection = normalize(worldViewPosition - position);
   
   vec3 color = vec3(0.0);
 
   for (int i = 0; i < MAX_POINT_LIGHTS; ++i)
   {  
-    vec3 light_position = point_light_positions[i];
-    vec3 light_color = point_light_colors[i];
-    vec3 light_attenuation = point_light_attenuations[i];
-    float light_range = point_light_ranges[i];
+    vec3 lightPosition = pointLightPositions[i];
+    vec3 lightColor = pointLightColors[i];
+    vec3 lightAttenuation = pointLightAttenuations[i];
+    float lightRange = pointLightRanges[i];
 
-    float distance = length(light_position - position);
-    float attenuation = min(1.0, light_range / (light_attenuation.x + light_attenuation.y * distance + light_attenuation.z * (distance * distance))); 
-    vec3 normalizedLightDirection = normalize(light_position - position);
+    float distance = length(lightPosition - position);
+    float attenuation = min(1.0, lightRange / (lightAttenuation.x + lightAttenuation.y * distance + lightAttenuation.z * (distance * distance))); 
+    vec3 lightDirection = normalize(lightPosition - position);
     
-    color += ComputeDiffuseColor(normal, normalizedLightDirection, albedo) * DIFFUSE_AMOUNT * light_color * attenuation;
-    color += ComputeSpecularColor(normal, normalizedLightDirection, normalize(VIEW_POS - position),
-       specular.xyz, specular.w) * SPECULAR_AMOUNT * light_color * attenuation;
+    vec3 diffuseColor = ComputeDiffuseColor(normal, lightDirection, albedo) * DIFFUSE_AMOUNT;
+    vec3 specularColor = ComputeSpecularColor(normal, lightDirection, eyeDirection, specular.xyz, specular.w) * SPECULAR_AMOUNT;
+
+    color += lightColor * attenuation * (diffuseColor + specularColor);
   }
 
   for (int i = 0; i < MAX_SPOT_LIGHTS; ++i)
   {
-    vec3 spot_light_position = spot_light_positions[i];
-    vec3 spot_light_direction = spot_light_directions[i];
-    float spot_light_angle = spot_light_angles[i];
+    float lightAngle = spotLightAngles[i];    
+    vec3 lightPosition = spotLightPositions[i];
+    vec3 lightSelfDirection = spotLightDirections[i];
+    vec3 lightColor = spotLightColors[i];      
+    vec3 lightAttenuation = spotLightAttenuations[i];
+    float lightExponent = spotLightExponents[i];
+    float lightRange = spotLightRanges[i];
 
-    vec3 spotLightDirection = normalize(spot_light_position - position);
-    float spotLightTheta = acos(dot(spotLightDirection, normalize(spot_light_direction)));
+    vec3 lightDirection = normalize(lightPosition - position);
+    float theta = acos(dot(lightSelfDirection, lightDirection));
 
-    if (spotLightTheta < spot_light_angle)
+    if (theta < lightAngle)
     {
-      vec3 spot_light_color = spot_light_colors[i];
-      vec3 spot_light_attenuation = spot_light_attenuations[i];
-      float spot_light_range = spot_light_ranges[i];
-      float spot_light_exponent = spot_light_exponents[i];
+      float distance = length(lightPosition - position);
+      float attenuation = min(1.0, lightRange / (lightAttenuation.x + lightAttenuation.y * distance + lightAttenuation.z * (distance * distance))); 
 
-      float distance = length(spot_light_position - position);
-      float attenuation = min(1.0, spot_light_range / (spot_light_attenuation.x +
-        spot_light_attenuation.y * distance + spot_light_attenuation.z * (distance * distance))); 
-    
-      attenuation *= pow(1 - spotLightTheta / spot_light_angle, spot_light_exponent); 
+      attenuation *= pow(max(0, 1 - theta / lightAngle), lightExponent);
 
-      color += ComputeDiffuseColor(normal, spotLightDirection, albedo) * DIFFUSE_AMOUNT * spot_light_color * attenuation;
-      color += ComputeSpecularColor(normal, spotLightDirection, normalize(VIEW_POS - position),
-        specular.xyz, specular.w) * SPECULAR_AMOUNT * spot_light_color * attenuation;
+      mat4 shadowMatrix = spotLightShadowMatrices[i];
+      vec4 shadowTexCoord = shadowMatrix * vec4(position, 1.0);
+      float shadowAttenuation = 1.0;
+
+      if (shadowTexCoord.w > 0)
+      {
+        shadowTexCoord /= shadowTexCoord.w;
+
+        shadowTexCoord = shadowTexCoord * 0.5 + 0.5;
+
+        if (shadowTexCoord.x >= 0.0 &&
+            shadowTexCoord.x <= 1.0 &&
+            shadowTexCoord.y >= 0.0 &&
+            shadowTexCoord.y <= 1.0)
+        {
+          shadowAttenuation = PCF(shadowTexCoord);
+        }
+      }
+     
+      vec3 diffuseColor = ComputeDiffuseColor(normal, lightDirection, albedo) * DIFFUSE_AMOUNT;
+      vec3 specularColor = ComputeSpecularColor(normal, lightDirection, eyeDirection, specular.xyz, specular.w) * SPECULAR_AMOUNT;
+
+      color += lightColor * attenuation * shadowAttenuation * (diffuseColor + specularColor);
     }
   }
   
   outColor = vec4(color, 1.0);
   
+#if 0
   // debug output
-/*  if (texCoord.x < 0.5 && texCoord.y < 0.5)
+  if (texCoord.x < 0.5 && texCoord.y < 0.5)
   {
     vec4 albedo = texture(albedoTexture, texCoord * 2.0);
 
-    outColor = vec4(albedo.xyz, 1.f);
+    //outColor = vec4(albedo.xyz, 1.f);
   }
   else if (texCoord.y < 0.5)
   {
-    vec4 specular = texture(specularTexture, vec2((texCoord.x - 0.5) * 2.0, texCoord.y * 2.0));
+    //vec4 specular = texture(specularTexture, vec2((texCoord.x - 0.5) * 2.0, texCoord.y * 2.0));
 
-    outColor = vec4(specular.xyz, 1.f);
+    //outColor = vec4(specular.xyz, 1.f);
+    vec4 shadow = texture(shadowTexture, vec2((texCoord.x - 0.5) * 2.0, texCoord.y * 2.0));
+
+    outColor = vec4(shadow.x) * 0.5;
   }
   else if (texCoord.x < 0.5)
   {
@@ -136,5 +196,6 @@ void main()
     vec4 normal = texture(normalTexture, vec2((texCoord.x - 0.5) * 2.0, (texCoord.y - 0.5) * 2.0));
 
     outColor = vec4(normal.xyz, 1.f);
-  }*/
+  }
+#endif
 }

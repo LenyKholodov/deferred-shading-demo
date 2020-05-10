@@ -627,7 +627,7 @@ class Pass
     void reserve_primitives(size_t count);
 
     /// Render pass
-    void render(const math::mat4f& view_projection_tm, const BindingContext* = nullptr);
+    void render(const BindingContext* = nullptr);
 
   private:
     struct Impl;
@@ -700,7 +700,7 @@ class Device
     Primitive create_plane(const Material& material);
 
     /// Create texture2d
-    Texture create_texture2d(size_t width, size_t height, PixelFormat format, size_t mips_count = (size_t)-1);
+    Texture create_texture2d(size_t width, size_t height, PixelFormat format, size_t mips_count = 100);
 
     /// Create render buffer
     RenderBuffer create_render_buffer(size_t width, size_t height, PixelFormat format);

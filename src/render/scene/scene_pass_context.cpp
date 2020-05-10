@@ -118,9 +118,12 @@ void ScenePassContext::set_view_node(const Node::Pointer& view, const math::mat4
   impl->projection_tm = projection_tm;
   impl->view_projection_tm = projection_tm * impl->view_tm;
 
+  math::vec3f world_view_position = view->world_tm() * math::vec3f(0.0f);
+
   impl->properties.set("viewMatrix", impl->view_tm);
-  impl->properties.set("projectionMatrix", impl->view_projection_tm);
-  impl->properties.set("viewProjectionMatrix", impl->view_projection_tm);
+  impl->properties.set("worldViewPosition", world_view_position);
+  impl->properties.set("projectionMatrix", impl->projection_tm);
+  //impl->properties.set("viewProjectionMatrix", impl->view_projection_tm);
 }
 
 void ScenePassContext::set_view_node(const Camera::Pointer& view)

@@ -18,6 +18,7 @@
 #include <ctime>
 #include <cstdlib>
 #include <cstdio>
+#include <cmath>
 
 using namespace engine::common;
 using namespace engine::render::scene;
@@ -33,14 +34,25 @@ namespace
 const float CAMERA_MOVE_SPEED = 10.f;
 const float CAMERA_ROTATE_SPEED = 0.5f;
 const float FOV_X = 90.f;
-const math::vec3f LIGHTS_ATTENUATION(1.0f, 0.35f, 0.44f);
+const math::vec3f LIGHTS_ATTENUATION(1, 0.75, 0.25);
 const size_t LIGHTS_COUNT = 32;
 const float LIGHTS_POSITION_RADIUS = 30.f;
-const float LIGHTS_MIN_RANGE = 30.f;
-const float LIGHTS_MAX_RANGE = 100.f;
-const size_t SHADOW_MAP_SIZE = 1024;
+const float LIGHTS_MIN_INTENSITY = 0.25f;
+const float LIGHTS_MAX_INTENSITY = 0.75f;
+const float LIGHTS_MIN_RANGE = 10.f;
+const float LIGHTS_MAX_RANGE = 50.f;
 const size_t MESHES_COUNT = 100;
 const float MESHES_POSITION_RADIUS = 3.f;
+
+float frand()
+{
+  return rand() / float(RAND_MAX);
+}
+
+float crand(float min=-1.0f, float max=1.0f)
+{
+  return frand() * (max - min) + min;
+}
 
 }
 
@@ -181,25 +193,28 @@ int main(void)
     mesh->set_mesh(media_mesh.merge_primitives());
     mesh->bind_to_parent(*scene_root);
 
-
       //scene lights
+
     Node::Pointer lights_parent = Node::create();
 
     lights_parent->bind_to_parent(*scene_root);
 
     std::vector<scene::PointLight::Pointer> point_lights;
+    std::vector<math::vec3f> point_lights_center_positions;
 
     point_lights.reserve(LIGHTS_COUNT);
+    point_lights_center_positions.reserve(LIGHTS_COUNT);
 
-    for (size_t i = 0, count = point_lights.size(); i < count; i++)
+    for (size_t i = 0, count = LIGHTS_COUNT; i < count; i++)
     {
       scene::PointLight::Pointer light = scene::PointLight::create();
 
-      light->set_light_color(math::vec3f(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX));
+      point_lights_center_positions.push_back(math::vec3f(LIGHTS_POSITION_RADIUS * cos(math::constf::pi * 2.f * i / count), 5.f, LIGHTS_POSITION_RADIUS * sin(math::constf::pi * 2.f * i / count)));
+
+      light->set_light_color(math::vec3f(crand(LIGHTS_MIN_INTENSITY, LIGHTS_MAX_INTENSITY), crand(LIGHTS_MIN_INTENSITY, LIGHTS_MAX_INTENSITY), crand(LIGHTS_MIN_INTENSITY, LIGHTS_MAX_INTENSITY)));
       light->set_attenuation(LIGHTS_ATTENUATION);
-      light->set_intensity(4.0f);
-      light->set_range(LIGHTS_MIN_RANGE + rand() / (float)RAND_MAX * (LIGHTS_MAX_RANGE - LIGHTS_MIN_RANGE));
-      light->set_position(math::vec3f(LIGHTS_POSITION_RADIUS * cos(math::constf::pi * 2.f * i / count), 5.f, LIGHTS_POSITION_RADIUS * sin(math::constf::pi * 2.f * i / count)));
+      light->set_intensity(crand(LIGHTS_MIN_INTENSITY, LIGHTS_MAX_INTENSITY));
+      light->set_range(crand(LIGHTS_MIN_RANGE, LIGHTS_MAX_RANGE));
 
       light->bind_to_parent(*lights_parent);
 
@@ -209,13 +224,14 @@ int main(void)
     scene::SpotLight::Pointer spot_light = scene::SpotLight::create();
 
     spot_light->set_attenuation(LIGHTS_ATTENUATION);
-    spot_light->set_intensity(4.0f);
     spot_light->set_range(100.f);
     spot_light->set_angle(math::degree(30.f));
     spot_light->set_exponent(0.8f);
     spot_light->set_position(math::vec3f(-10.f, 10.f, 0.f));
-    spot_light->set_orientation(math::to_quat(math::degree(-30.f), math::degree(45.f), camera_roll));
+//    spot_light->set_orientation(math::to_quat(math::degree(30.f), math::degree(0.f), math::degree(0.f)));
+    //spot_light->set_orientation(math::to_quat(math::degree(90.f), math::degree(0.f), math::degree(0.f)));    
     spot_light->bind_to_parent(*lights_parent);
+    spot_light->world_look_to(math::vec3f(0.0f), math::vec3f(0, 1, 0));
 
       //render setup
 
@@ -254,7 +270,7 @@ int main(void)
     Material mtl1;
     PropertyMap mtl1_properties = mtl1.properties();
 
-    mtl1_properties.set("shininess", 50.f);
+    mtl1_properties.set("shininess", 10.f);
 
     TextureList mtl1_textures = mtl1.textures();
 
@@ -293,6 +309,28 @@ int main(void)
         camera->set_position(camera_position);
       }
 
+        //animate objects
+
+      float time = Application::time();
+
+      for (size_t i=0; i<point_lights.size(); i++)
+      {
+        auto& light = point_lights[i];
+        float factor = math::constf::pi * 2.f * i / point_lights.size();
+
+        math::vec3f dpos = to_quat(math::degree(factor + time * 100 * factor), math::vec3f(0, 1, 0)) * math::vec3f(10, 0, 0);
+        math::vec3f pos = point_lights_center_positions[i] + dpos;
+
+        light->set_position(pos);
+      }
+
+      //spot_light->set_intensity((1.0f + cos(time * 2)) / 2.0f * 10.0f);
+      spot_light->set_intensity(10.0f);
+
+      //spot_light->set_orientation(math::quatf());
+      spot_light->set_position(math::vec3f(cos(time * 0.5) * 20, 20.f, sin(time * 0.5) * 20));
+      //spot_light->world_look_to(math::vec3f(0.0f), math::vec3f(0, 1, 0));
+
         //render scene
 
       scene_renderer.render(scene_viewport);
@@ -301,7 +339,7 @@ int main(void)
 
       window.swap_buffers();
 
-        //animate objects
+        //wait for next frame
 
       static const size_t TIMEOUT_MS = 10;
 

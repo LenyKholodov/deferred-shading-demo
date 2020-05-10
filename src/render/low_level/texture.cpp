@@ -97,7 +97,12 @@ struct Texture::Impl
 
         bind();
 
-        mips_count = std::min(mips_count, get_mips_count(width, height));
+        volatile size_t computed_mips_count = get_mips_count(width, height);
+
+        if (mips_count > computed_mips_count || mips_count == (size_t)-1)
+          mips_count = computed_mips_count;
+
+        engine_check(mips_count < 100 && mips_count >= 0);
 
         GLint level_width = static_cast<GLint>(width);
         GLint level_height = static_cast<GLint>(height);

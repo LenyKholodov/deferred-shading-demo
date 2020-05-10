@@ -205,6 +205,42 @@ const math::vec3f& Node::scale() const
   return impl->scale;
 }
 
+void Node::look_to(const math::vec3f& target_point, const math::vec3f& up)
+{
+  math::vec3f x, y, z;
+
+  z = normalize(target_point);
+  y = normalize(up);
+
+  static const float EPS = 0.001f;
+  
+  if (qlen(y) < EPS || qlen(z) < EPS || equal(y, z, EPS))
+    return;
+
+  math::mat3f view;
+
+  x = cross(y, z);
+  y = cross(z, x);
+
+  view[0] = x;
+  view[1] = y;
+  view[2] = z;
+  view    = transpose(view);  
+  
+  math::quatf rotation = normalize(to_quat(view));  
+
+  set_orientation(rotation * impl->orientation);
+}
+
+void Node::world_look_to(const math::vec3f& target_point, const math::vec3f& up)
+{
+  math::mat4f inv_world_tm = inverse(world_tm());
+  math::vec3f local_target_point = inv_world_tm * target_point;
+  math::vec3f local_up = inv_world_tm * up;
+
+  look_to(local_target_point, local_up);
+}
+
 const math::mat4f& Node::local_tm() const
 {
   if (impl->is_local_tm_dirty)
@@ -234,7 +270,7 @@ const math::mat4f& Node::world_tm() const
 }
 
 void Node::traverse(ISceneVisitor& visitor) const
-{
+{ 
   const_cast<Node&>(*this).visit(visitor);
 
   for (Node::Pointer it=first_child(); it; it=it->next_child())

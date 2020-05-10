@@ -133,7 +133,7 @@ struct Pass::Impl
     primitives.reserve(PRIMITIVES_RESERVE_SIZE);
   }
 
-  void render(const math::mat4f& view_projection_tm, const BindingContext* parent_bindings)
+  void render(const BindingContext* parent_bindings)
   {
     engine_check(sizeof(IndexBuffer::index_type) == 2); //change glDrawElements call for different sizes
 
@@ -159,7 +159,20 @@ struct Pass::Impl
       //update binding context
 
     BindingContext static_bindings(parent_bindings, properties, textures);
+
+    const Property* view_tm_property = static_bindings.find_property("viewMatrix");
+    const Property* projection_tm_property = static_bindings.find_property("projectionMatrix");
+
+    engine_check_null(view_tm_property);
+    engine_check_null(projection_tm_property);
+
+    const math::mat4f& projection_tm = projection_tm_property->get<math::mat4f>();
+    const math::mat4f& view_tm = view_tm_property->get<math::mat4f>();
+    math::mat4f view_projection_tm = projection_tm * view_tm;
+
     BindingContext bindings(&static_bindings, dynamic_properties);
+
+    dynamic_properties.set("viewProjectionMatrix", view_projection_tm);
 
       //draw primitives
 
@@ -167,7 +180,7 @@ struct Pass::Impl
 
     for (auto& primitive : primitives)
     {
-      render_primitive(primitive, view_projection_tm, program, input_layout, bindings);
+      render_primitive(primitive, view_tm, view_projection_tm, program, input_layout, bindings);
     }
 
       //clear pass
@@ -175,7 +188,13 @@ struct Pass::Impl
     primitives.clear();
   }
 
-  void render_primitive(PassPrimitive& primitive, const math::mat4f& view_projection_tm, const Program& program, InputLayout& input_layout, BindingContext& parent_bindings)
+  void render_primitive(
+    PassPrimitive& primitive,
+    const math::mat4f& view_tm,
+    const math::mat4f& view_projection_tm,
+    const Program& program,
+    InputLayout& input_layout,
+    BindingContext& parent_bindings)
   {
       //setup bindings
 
@@ -184,6 +203,8 @@ struct Pass::Impl
     math::mat4f mvp = view_projection_tm * primitive.model_tm;
 
     dynamic_properties.set("MVP", mvp);
+    dynamic_properties.set("modelMatrix", primitive.model_tm);
+    dynamic_properties.set("modelViewMatrix", view_tm * primitive.model_tm);
 
       //setup shader parameters and textures
 
@@ -569,7 +590,7 @@ size_t Pass::primitives_capacity() const
   return impl->primitives.capacity();
 }
 
-void Pass::render(const math::mat4f& view_projection_tm, const BindingContext* bindings)
+void Pass::render(const BindingContext* bindings)
 {
-  impl->render(view_projection_tm, bindings);
+  impl->render(bindings);
 }

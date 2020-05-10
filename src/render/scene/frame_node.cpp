@@ -120,11 +120,9 @@ void FrameNode::render(ScenePassContext& context)
 
   BindingContext bindings(&context.bindings(), impl->properties, impl->textures);
 
-  const math::mat4f& view_projection_tm = context.view_projection_tm();
-
   for (auto& pass : impl->passes)
   {
-    pass.pass.render(view_projection_tm, &bindings);
+    pass.pass.render(&bindings);
   }
 
     //update frame info
