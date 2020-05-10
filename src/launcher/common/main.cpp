@@ -1,4 +1,5 @@
 #include <render/device.h>
+#include <media/image.h>
 #include <application/application.h>
 #include <application/window.h>
 #include <common/exception.h>
@@ -76,6 +77,21 @@ int main(void)
 
     g_buffer_frame_buffer.reset_viewport();
 
+    media::image::Image diffuse_map ("media/textures/brickwall_diffuse.jpg");
+    media::image::Image normal_map ("media/textures/brickwall_normal.jpg");
+    media::image::Image specular_map ("media/textures/brickwall_specular.jpg");
+
+    render::Texture model_diffuse_texture = render_device.create_texture2d(diffuse_map.width(), diffuse_map.height(), render::PixelFormat::PixelFormat_RGBA8);
+    render::Texture model_normal_texture = render_device.create_texture2d(normal_map.width(), normal_map.height(), render::PixelFormat::PixelFormat_RGBA8);
+    render::Texture model_specular_texture = render_device.create_texture2d(specular_map.width(), specular_map.height(), render::PixelFormat::PixelFormat_RGBA8);
+
+    model_diffuse_texture.set_data(0, 0, 0, diffuse_map.width(), diffuse_map.height(), diffuse_map.bitmap());
+    model_diffuse_texture.generate_mips();
+    model_normal_texture.set_data(0, 0, 0, normal_map.width(), normal_map.height(), normal_map.bitmap());
+    model_normal_texture.generate_mips();
+    model_specular_texture.set_data(0, 0, 0, specular_map.width(), specular_map.height(), specular_map.bitmap());
+    model_specular_texture.generate_mips();
+
     media::geometry::Mesh media_mesh = media::geometry::MeshFactory::create_sphere("mtl1", 0.5f);
 
     media_mesh = media_mesh.merge(media::geometry::MeshFactory::create_box("mtl1", 1.5f, 0.1f, 0.1f));
@@ -89,6 +105,9 @@ int main(void)
     media_mesh2 = media_mesh2.merge(media::geometry::MeshFactory::create_box("mtl1", 0.05f, 0.05f, 0.75f));
 
     render::Material mtl1;
+    render::TextureList mtl1_textures = mtl1.textures();
+
+    mtl1_textures.insert("diffuse_texture", model_diffuse_texture);
 
     render::MaterialList materials;
 
@@ -97,7 +116,8 @@ int main(void)
     render::Mesh mesh = render_device.create_mesh(media_mesh, materials);
     render::Mesh mesh2 = render_device.create_mesh(media_mesh2, materials);
 
-    render::Program program = render_device.create_program_from_file("media/shaders/simple.glsl");
+    //render::Program program = render_device.create_program_from_file("media/shaders/simple.glsl");
+    render::Program program = render_device.create_program_from_file("media/shaders/simple_tex.glsl");
 
     render::Pass pass = render_device.create_pass(program);
 
@@ -126,6 +146,12 @@ int main(void)
     app.main_loop([&](){
       if (window.should_close())
         app.exit();
+
+        //viewport adjustments according to a window size
+
+      render_device.window_frame_buffer().reset_viewport();
+
+        //passes
 
       int width = window.frame_buffer_width(), height = window.frame_buffer_height();
       float ratio = width / (float) height;
@@ -173,6 +199,8 @@ int main(void)
       light_pass.add_primitive(plane);
 
 //      light_pass.render();
+
+        //image presenting
 
       window.swap_buffers();
 

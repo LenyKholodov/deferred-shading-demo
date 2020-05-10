@@ -27,20 +27,23 @@ struct engine::render::ShaderImpl
     context->make_current();
 
     GLenum gl_type = GL_NONE;
+    const char* shader_type_string = "";
 
     switch (type)
     {
       case ShaderType_Vertex:
         gl_type = GL_VERTEX_SHADER;
+        shader_type_string = "vertex";
         break;
       case ShaderType_Pixel:
         gl_type = GL_FRAGMENT_SHADER;
+        shader_type_string = "pixel";
         break;
       default:
         throw Exception::format("Unexpected shader type %d", type);
     }
 
-    engine_log_info("Compiling %s...", this->name.c_str());
+    engine_log_info("Compiling %s shader %s...", shader_type_string, this->name.c_str());
 
     shader_id = glCreateShader(gl_type);
 
@@ -154,7 +157,7 @@ struct Program::Impl
 
       //create program
 
-    engine_log_info("Linking %s...", this->name.c_str());
+    engine_log_info("Linking shader program %s...", this->name.c_str());
 
     program_id = glCreateProgram();
 
@@ -235,6 +238,7 @@ struct Program::Impl
       parameter.name           = parameter_name;
       parameter.name_hash      = common::StringHash(parameter_name);
       parameter.elements_count = (unsigned int)elements_count;
+      parameter.is_sampler     = false;
       parameter.location       = glGetUniformLocation(program_id, parameter_name.c_str());
       
       switch (type)
@@ -265,6 +269,7 @@ struct Program::Impl
         case GL_SAMPLER_2D_SHADOW:
         case GL_SAMPLER_2D_RECT:
         case GL_SAMPLER_2D_RECT_SHADOW:
+          parameter.is_sampler = true;
           parameter.type = PropertyType_Int;
           break;                
         default:
@@ -363,7 +368,7 @@ int Program::get_attribute_location(const char* name) const
     impl->name.c_str(), name);
 }
 
-void Program::bind()
+void Program::bind() const
 {
   impl->context->make_current();
 

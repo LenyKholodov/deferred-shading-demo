@@ -92,7 +92,7 @@ Device::Device(const Window& window, const DeviceOptions& options)
   impl->default_program = std::make_unique<Program>(create_program_from_source("default", DEFAULT_PROGRAM_SOURCE_CODE));
 }
 
-const FrameBuffer& Device::window_frame_buffer() const
+FrameBuffer& Device::window_frame_buffer() const
 {
   return impl->window_frame_buffer;
 }

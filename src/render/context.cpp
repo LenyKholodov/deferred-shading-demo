@@ -130,6 +130,16 @@ DeviceContextImpl::DeviceContextImpl(const Window& window, const DeviceOptions& 
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
   }
 
+    //get capabilities
+
+  GLint texture_units_count = 0;
+
+  glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, (GLint*)&texture_units_count);
+
+  engine_check(texture_units_count >= 8);
+
+  device_capabilities.active_textures_count = texture_units_count;
+
   check_errors();
 }
 

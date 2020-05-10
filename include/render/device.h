@@ -33,6 +33,7 @@ class DeviceContextImpl;
 struct BufferImpl;
 struct ShaderImpl;
 struct TextureLevelInfo;
+struct ProgramParameter;
 
 typedef std::shared_ptr<DeviceContextImpl> DeviceContextPtr;
 
@@ -112,23 +113,6 @@ struct Viewport
     : x(x), y(y), width(width), height(height) {}
 };
 
-/// Program parameter
-struct ProgramParameter 
-{
-  std::string name; //parameter name
-  common::StringHash name_hash; //hash of the name
-  PropertyType type; //type of parameter
-  size_t elements_count; //number of elements (for arrays)
-  int location; //location of the parameter
-
-  ProgramParameter()
-    : type()
-    , name_hash("")
-    , elements_count()
-    , location(-1)
-  { }
-};
-
 /// Texture
 class Texture
 {
@@ -170,7 +154,7 @@ class Texture
     void get_data(size_t layer, size_t x, size_t y, size_t width, size_t height, void* data);
 
     /// Bind texture to context
-    void bind();
+    void bind() const;
 
     /// Generate mipmaps
     void generate_mips();
@@ -284,7 +268,7 @@ class FrameBuffer
     void detach_depth_buffer();
 
     /// Bind framebuffer for rendering to a context
-    void bind();
+    void bind() const;
 
   private:
     struct Impl;
@@ -306,7 +290,7 @@ class VertexBuffer
     void set_data(size_t offset, size_t count, const Vertex* vertices);
 
     /// Bind buffer
-    void bind();
+    void bind() const;
 
   private:
     std::shared_ptr<BufferImpl> impl;
@@ -328,7 +312,7 @@ class IndexBuffer
     void set_data(size_t offset, size_t count, const index_type* indices);
 
     /// Bind buffer
-    void bind();
+    void bind() const;
 
   private:
     std::shared_ptr<BufferImpl> impl;
@@ -383,7 +367,7 @@ class Program
     const ProgramParameter* parameters() const;
 
     /// Bind
-    void bind();
+    void bind() const;
 
   private:
     struct Impl;
@@ -633,7 +617,7 @@ class Device
     Device(const Window& window, const DeviceOptions& options);
 
     /// Window frame buffer
-    const FrameBuffer& window_frame_buffer() const;
+    FrameBuffer& window_frame_buffer() const;
 
     /// Create frame buffer
     FrameBuffer create_frame_buffer();

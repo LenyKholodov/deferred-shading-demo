@@ -36,6 +36,8 @@ struct Texture::Impl
   TextureFilter mag_filter; //magnifying filter
   bool need_reapply_sampler; //sample applying
   GLenum gl_internal_format; //GL pixel format
+  GLenum gl_uncompressed_format; //GL uncompressed format
+  GLenum gl_uncompressed_type; //GL uncompressed type
   GLuint texture_id; //GL texture
   GLenum target; //GL target for this texture
 
@@ -54,6 +56,8 @@ struct Texture::Impl
     , min_filter(TextureFilter_Linear)
     , mag_filter(TextureFilter_Linear)
     , need_reapply_sampler(true)
+    , gl_uncompressed_format(GL_NONE)
+    , gl_uncompressed_type(GL_NONE)
     , texture_id()
     , target()
   {
@@ -63,9 +67,6 @@ struct Texture::Impl
 
     if (!texture_id)
       throw Exception::format("Can't create GL texture");
-
-    GLenum gl_uncompressed_format = GL_NONE;
-    GLenum gl_uncompressed_type = GL_NONE;
 
     switch (format)
     {
@@ -219,7 +220,11 @@ void Texture::set_mag_filter(TextureFilter filter)
 
 void Texture::set_data(size_t layer, size_t x, size_t y, size_t width, size_t height, const void* data)
 {
-  unimplemented();
+  bind();
+
+  engine_check(layer == 0); //no support of other textures for now
+
+  glTexSubImage2D (GL_TEXTURE_2D, 0, (GLint)x, (GLint)y, (GLint)width, (GLint)height, impl->gl_uncompressed_format, impl->gl_uncompressed_type, data);
 }
 
 void Texture::get_data(size_t layer, size_t x, size_t y, size_t width, size_t height, void* data)
@@ -227,7 +232,7 @@ void Texture::get_data(size_t layer, size_t x, size_t y, size_t width, size_t he
   unimplemented();
 }
 
-void Texture::bind()
+void Texture::bind() const
 {
   impl->bind();
 }

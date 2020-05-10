@@ -224,6 +224,64 @@ struct Pass::Impl
     context->check_errors();
   }
 
+  void bind_program_parameters(const Program& program, const BindingContext& bindings)
+  {
+    size_t parameters_count = program.parameters_count();
+    const ProgramParameter* parameters = program.parameters();
+
+    if (!parameters_count)
+      return;
+
+    GLint active_texture = 0, active_textures_count = static_cast<GLint>(context->capabilities().active_textures_count);
+
+    const ProgramParameter* param = parameters;
+
+    for (size_t i=0; i<parameters_count; i++, param++)
+    {
+        //check the parameter is a sampler
+
+      if (param->is_sampler)
+      {
+        const Texture* texture = bindings.find_texture(param->name.c_str());
+
+        if (!texture)
+          throw Exception::format("Can't find shader program '%s' texture '%s'", program.name(), param->name.c_str());          
+
+        if (active_texture >= active_textures_count)
+          throw Exception::format("Can't bind shader program '%s' texture '%s'; all available %u texture slots are bound",
+            program.name(), param->name.c_str(), active_textures_count);
+
+        bind_sampler(program, *param, *texture, active_texture);
+
+        active_texture++;
+      }
+      else
+      {
+          //otherwise it is a uniform
+
+        const Property* property = bindings.find_property(param->name.c_str());
+
+        if (!property)
+          throw Exception::format("Can't find shader program '%s' parameter '%s'", program.name(), param->name.c_str());
+
+        bind_uniform_parameter(program, *param, *property);
+      }
+    }
+  }
+
+  void bind_sampler(const Program& program, const ProgramParameter& param, const Texture& texture, GLint active_texture)
+  {
+      //bind texture
+
+    glActiveTexture(GL_TEXTURE0 + active_texture);
+
+    texture.bind();
+
+      //provide sample for the program
+
+    glUniform1i(param.location, active_texture);
+  }
+
   template <class T>
   struct ArrayChecker {
     static void check(const Program& program, const Property& property, const ProgramParameter& param)
@@ -236,77 +294,61 @@ struct Pass::Impl
     }
   };
 
-  void bind_program_parameters(const Program& program, const BindingContext& bindings)
+  void bind_uniform_parameter(const Program& program, const ProgramParameter& param, const Property& property)
   {
-    size_t parameters_count = program.parameters_count();
-    const ProgramParameter* parameters = program.parameters();
+    if (property.type() != param.type)
+      throw Exception::format("Program '%s' parameter '%s' type mismatch: expected %s, got %s",
+        program.name(), param.name.c_str(), Property::get_type_name(param.type), Property::get_type_name(property.type()));
 
-    if (!parameters_count)
-      return ;
+    GLsizei elements_count = static_cast<GLsizei>(param.elements_count);
 
-    const ProgramParameter* param = parameters;
-
-    for (size_t i=0; i<parameters_count; i++, param++)
+    switch (param.type)
     {
-      const Property* property = bindings.find_property(param->name.c_str());
-
-      if (!property)
-        throw Exception::format("Can't find shader program '%s' parameter '%s'", program.name(), param->name.c_str());
-
-      if (property->type() != param->type)
-        throw Exception::format("Program '%s' parameter '%s' type mismatch: expected %s, got %s",
-          program.name(), param->name.c_str(), Property::get_type_name(param->type), Property::get_type_name(property->type()));
-
-      GLsizei elements_count = static_cast<GLsizei>(param->elements_count);
-
-      switch (param->type)
-      {
-        case PropertyType_Int:
-          glUniform1iv(param->location, elements_count, &property->get<int>());
-          break;
-        case PropertyType_Float:
-          glUniform1fv(param->location, elements_count, &property->get<float>());
-          break;
-        case PropertyType_Vec2f:
-          glUniform2fv(param->location, elements_count, &property->get<math::vec2f>()[0]);
-          break;
-        case PropertyType_Vec3f:
-          glUniform3fv(param->location, elements_count, &property->get<math::vec3f>()[0]);
-          break;
-        case PropertyType_Vec4f:
-          glUniform4fv(param->location, elements_count, &property->get<math::vec4f>()[0]);
-          break;
-        case PropertyType_Mat4f:
-          glUniformMatrix4fv(param->location, elements_count, GL_TRUE, &property->get<math::mat4f>()[0][0]);
-          break;
-        case PropertyType_IntArray:
-          ArrayChecker<int>::check(program, *property, *param);
-          glUniform1iv(param->location, elements_count, &property->get<int>());
-          break;
-        case PropertyType_FloatArray:
-          ArrayChecker<float>::check(program, *property, *param);
-          glUniform1fv(param->location, elements_count, &property->get<float>());
-          break;
-        case PropertyType_Vec2fArray:
-          ArrayChecker<math::vec2f>::check(program, *property, *param);
-          glUniform2fv(param->location, elements_count, &property->get<math::vec2f>()[0]);
-          break;
-        case PropertyType_Vec3fArray:
-          ArrayChecker<math::vec3f>::check(program, *property, *param);
-          glUniform3fv(param->location, elements_count, &property->get<math::vec3f>()[0]);
-          break;
-        case PropertyType_Vec4fArray:
-          ArrayChecker<math::vec4f>::check(program, *property, *param);
-          glUniform4fv(param->location, elements_count, &property->get<math::vec4f>()[0]);
-          break;
-        case PropertyType_Mat4fArray:
-          ArrayChecker<math::mat4f>::check(program, *property, *param);
-          glUniformMatrix4fv(param->location, elements_count, GL_TRUE, &property->get<math::mat4f>()[0][0]);
-          break;
-        default:
-          throw Exception::format("Unexpected program '%s' parameter '%s' type %s",
-            program.name(), param->name.c_str(), Property::get_type_name(param->type));
-      }
+      case PropertyType_Int:
+        glUniform1iv(param.location, elements_count, &property.get<int>());
+        break;
+      case PropertyType_Float:
+        glUniform1fv(param.location, elements_count, &property.get<float>());
+        break;
+      case PropertyType_Vec2f:
+        glUniform2fv(param.location, elements_count, &property.get<math::vec2f>()[0]);
+        break;
+      case PropertyType_Vec3f:
+        glUniform3fv(param.location, elements_count, &property.get<math::vec3f>()[0]);
+        break;
+      case PropertyType_Vec4f:
+        glUniform4fv(param.location, elements_count, &property.get<math::vec4f>()[0]);
+        break;
+      case PropertyType_Mat4f:
+        glUniformMatrix4fv(param.location, elements_count, GL_TRUE, &property.get<math::mat4f>()[0][0]);
+        break;
+      case PropertyType_IntArray:
+        ArrayChecker<int>::check(program, property, param);
+        glUniform1iv(param.location, elements_count, &property.get<int>());
+        break;
+      case PropertyType_FloatArray:
+        ArrayChecker<float>::check(program, property, param);
+        glUniform1fv(param.location, elements_count, &property.get<float>());
+        break;
+      case PropertyType_Vec2fArray:
+        ArrayChecker<math::vec2f>::check(program, property, param);
+        glUniform2fv(param.location, elements_count, &property.get<math::vec2f>()[0]);
+        break;
+      case PropertyType_Vec3fArray:
+        ArrayChecker<math::vec3f>::check(program, property, param);
+        glUniform3fv(param.location, elements_count, &property.get<math::vec3f>()[0]);
+        break;
+      case PropertyType_Vec4fArray:
+        ArrayChecker<math::vec4f>::check(program, property, param);
+        glUniform4fv(param.location, elements_count, &property.get<math::vec4f>()[0]);
+        break;
+      case PropertyType_Mat4fArray:
+        ArrayChecker<math::mat4f>::check(program, property, param);
+        glUniformMatrix4fv(param.location, elements_count, GL_TRUE, &property.get<math::mat4f>()[0][0]);
+        break;
+      default:
+        throw Exception::format("Unexpected program '%s' parameter '%s' type %s",
+          program.name(), param.name.c_str(), Property::get_type_name(param.type));
     }
   }
 

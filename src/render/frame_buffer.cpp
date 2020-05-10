@@ -271,19 +271,9 @@ const Viewport& FrameBuffer::viewport() const
   return impl->viewport;
 }
 
-void FrameBuffer::bind()
+void FrameBuffer::bind() const
 {
   impl->bind();
-
-    //configure viewport
-
-  if (!impl->frame_buffer_id)
-  {
-      //reset viewport each time for window based render target, because window size can change
-      //TODO: caching
-
-    reset_viewport();
-  }
 
   const Viewport& v = impl->viewport;
 

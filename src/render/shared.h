@@ -36,6 +36,17 @@ class BaseObject
     BaseObject& operator = (BaseObject&&) = delete;
 };
 
+/// Context capabilities
+struct DeviceContextCapabilities
+{
+  uint32_t active_textures_count;
+
+  DeviceContextCapabilities()
+    : active_textures_count()
+  {
+  }
+};
+
 /// Device context implementation
 class DeviceContextImpl: BaseObject
 {
@@ -54,6 +65,9 @@ class DeviceContextImpl: BaseObject
 
     /// Options
     const DeviceOptions& options() const { return device_options; }
+
+    /// Context capabilities
+    const DeviceContextCapabilities& capabilities() const { return device_capabilities; }
 
     /// Make context current
     void make_current()
@@ -129,6 +143,7 @@ class DeviceContextImpl: BaseObject
     Window render_window; //target window
     GLFWwindow* context; //context
     DeviceOptions device_options; //device options
+    DeviceContextCapabilities device_capabilities; //device context capabilities
 };
 
 /// Texture level info
@@ -146,6 +161,25 @@ struct TextureLevelInfo
     , height()
   {
   }
+};
+
+/// Program parameter
+struct ProgramParameter 
+{
+  std::string name; //parameter name
+  common::StringHash name_hash; //hash of the name
+  PropertyType type; //type of parameter
+  size_t elements_count; //number of elements (for arrays)
+  bool is_sampler; //is this parameter a sampler
+  int location; //location of the parameter
+
+  ProgramParameter()
+    : type()
+    , name_hash("")
+    , elements_count()
+    , is_sampler()
+    , location(-1)
+  { }
 };
 
 }}

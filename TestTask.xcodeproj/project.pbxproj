@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		851E34DE246718ED00B13F6B /* image.mm in Sources */ = {isa = PBXBuildFile; fileRef = 851E34DD246718ED00B13F6B /* image.mm */; };
 		856EAE252465D4E600938D78 /* geometry_mesh_factory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 856EAE232465D4E600938D78 /* geometry_mesh_factory.cpp */; };
 		856EAE262465D4E600938D78 /* geometry_mesh.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 856EAE242465D4E600938D78 /* geometry_mesh.cpp */; };
 		856EAE2B2465D4F100938D78 /* device.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 856EAE272465D4F100938D78 /* device.cpp */; };
@@ -56,6 +57,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		851E34DC246718DA00B13F6B /* image.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = image.h; path = include/media/image.h; sourceTree = "<group>"; };
+		851E34DD246718ED00B13F6B /* image.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = image.mm; path = src/media/image.mm; sourceTree = "<group>"; };
 		8548774A2465BB9F005D3056 /* window.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = window.h; path = include/application/window.h; sourceTree = "<group>"; };
 		8548774B2465BB9F005D3056 /* application.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = application.h; path = include/application/application.h; sourceTree = "<group>"; };
 		8548774D2465BC00005D3056 /* geometry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = geometry.h; path = include/media/geometry.h; sourceTree = "<group>"; };
@@ -167,6 +170,7 @@
 		8548774C2465BBF2005D3056 /* media */ = {
 			isa = PBXGroup;
 			children = (
+				851E34DC246718DA00B13F6B /* image.h */,
 				8548774D2465BC00005D3056 /* geometry.h */,
 			);
 			name = media;
@@ -228,6 +232,7 @@
 		856EAE222465D4BE00938D78 /* media */ = {
 			isa = PBXGroup;
 			children = (
+				851E34DD246718ED00B13F6B /* image.mm */,
 				856EAE232465D4E600938D78 /* geometry_mesh_factory.cpp */,
 				856EAE242465D4E600938D78 /* geometry_mesh.cpp */,
 			);
@@ -476,6 +481,7 @@
 				B3AD1F3B2464634C00730E61 /* log.cpp in Sources */,
 				B379B1E22466A34C00A434FD /* pass.cpp in Sources */,
 				B3F7F23C246707B8001C4D7E /* texture_list.cpp in Sources */,
+				851E34DE246718ED00B13F6B /* image.mm in Sources */,
 				B379B1DE246604A600A434FD /* shader.cpp in Sources */,
 				B3AD1F252464319B00730E61 /* cocoa_window.m in Sources */,
 				B3AD1F1C2464319B00730E61 /* cocoa_time.c in Sources */,

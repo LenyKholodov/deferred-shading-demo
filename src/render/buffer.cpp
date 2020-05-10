@@ -95,7 +95,7 @@ void VertexBuffer::set_data(size_t offset, size_t count, const Vertex* vertices)
   impl->set_data(offset, count, vertices);
 }
 
-void VertexBuffer::bind()
+void VertexBuffer::bind() const
 {
   impl->bind();
 }
@@ -119,7 +119,7 @@ void IndexBuffer::set_data(size_t offset, size_t count, const index_type* indice
   impl->set_data(offset, count, indices);
 }
 
-void IndexBuffer::bind()
+void IndexBuffer::bind() const
 {
   impl->bind();
 }
