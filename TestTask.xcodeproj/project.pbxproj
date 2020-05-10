@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		851E34DE246718ED00B13F6B /* image.mm in Sources */ = {isa = PBXBuildFile; fileRef = 851E34DD246718ED00B13F6B /* image.mm */; };
+		8527279C2468456700C04B6A /* render_buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8527279B2468456700C04B6A /* render_buffer.cpp */; };
 		856EAE252465D4E600938D78 /* geometry_mesh_factory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 856EAE232465D4E600938D78 /* geometry_mesh_factory.cpp */; };
 		856EAE262465D4E600938D78 /* geometry_mesh.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 856EAE242465D4E600938D78 /* geometry_mesh.cpp */; };
 		856EAE2B2465D4F100938D78 /* device.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 856EAE272465D4F100938D78 /* device.cpp */; };
@@ -31,6 +32,8 @@
 		B3524A4924683754000BB462 /* scene_pass_factory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3524A4824683754000BB462 /* scene_pass_factory.cpp */; };
 		B3524A4B2468501A000BB462 /* component.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3524A4A2468501A000BB462 /* component.cpp */; };
 		B3524A4E24685689000BB462 /* test_scene_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3524A4D24685689000BB462 /* test_scene_pass.cpp */; };
+		B3524A50246867BB000BB462 /* deferred_render_passes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3524A4F246867BB000BB462 /* deferred_render_passes.cpp */; };
+		B3524A5224686E9D000BB462 /* scene_visitor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3524A5124686E9D000BB462 /* scene_visitor.cpp */; };
 		B379B1DC2465F05A00A434FD /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B379B1DB2465F05A00A434FD /* buffer.cpp */; };
 		B379B1DE246604A600A434FD /* shader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B379B1DD246604A600A434FD /* shader.cpp */; };
 		B379B1E02466286300A434FD /* property_map.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B379B1DF2466286300A434FD /* property_map.cpp */; };
@@ -69,6 +72,7 @@
 /* Begin PBXFileReference section */
 		851E34DC246718DA00B13F6B /* image.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = image.h; path = include/media/image.h; sourceTree = "<group>"; };
 		851E34DD246718ED00B13F6B /* image.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = image.mm; path = src/media/image.mm; sourceTree = "<group>"; };
+		8527279B2468456700C04B6A /* render_buffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = render_buffer.cpp; path = src/render/low_level/render_buffer.cpp; sourceTree = "<group>"; };
 		8548774A2465BB9F005D3056 /* window.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = window.h; path = include/application/window.h; sourceTree = "<group>"; };
 		8548774B2465BB9F005D3056 /* application.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = application.h; path = include/application/application.h; sourceTree = "<group>"; };
 		8548774D2465BC00005D3056 /* geometry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = geometry.h; path = include/media/geometry.h; sourceTree = "<group>"; };
@@ -112,6 +116,8 @@
 		B3524A4824683754000BB462 /* scene_pass_factory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = scene_pass_factory.cpp; path = src/render/scene/scene_pass_factory.cpp; sourceTree = "<group>"; };
 		B3524A4A2468501A000BB462 /* component.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = component.cpp; path = src/common/component.cpp; sourceTree = "<group>"; };
 		B3524A4D24685689000BB462 /* test_scene_pass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = test_scene_pass.cpp; path = src/render/scene_passes/test_scene_pass.cpp; sourceTree = "<group>"; };
+		B3524A4F246867BB000BB462 /* deferred_render_passes.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = deferred_render_passes.cpp; path = src/render/scene_passes/deferred_render_passes.cpp; sourceTree = "<group>"; };
+		B3524A5124686E9D000BB462 /* scene_visitor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = scene_visitor.cpp; path = src/render/scene_passes/scene_visitor.cpp; sourceTree = "<group>"; };
 		B379B1DB2465F05A00A434FD /* buffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = buffer.cpp; path = src/render/low_level/buffer.cpp; sourceTree = "<group>"; };
 		B379B1DD246604A600A434FD /* shader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = shader.cpp; path = src/render/low_level/shader.cpp; sourceTree = "<group>"; };
 		B379B1DF2466286300A434FD /* property_map.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = property_map.cpp; path = src/common/property_map.cpp; sourceTree = "<group>"; };
@@ -335,6 +341,7 @@
 		B3524A4024680EAE000BB462 /* low_level */ = {
 			isa = PBXGroup;
 			children = (
+				8527279B2468456700C04B6A /* render_buffer.cpp */,
 				B3F7F23D2467186F001C4D7E /* material_list.cpp */,
 				B3F7F23B246707B8001C4D7E /* texture_list.cpp */,
 				B3F7F2392467079E001C4D7E /* material.cpp */,
@@ -365,6 +372,8 @@
 		B3524A4C2468567A000BB462 /* scene_passes */ = {
 			isa = PBXGroup;
 			children = (
+				B3524A5124686E9D000BB462 /* scene_visitor.cpp */,
+				B3524A4F246867BB000BB462 /* deferred_render_passes.cpp */,
 				B3524A4D24685689000BB462 /* test_scene_pass.cpp */,
 			);
 			name = scene_passes;
@@ -560,6 +569,7 @@
 				B3524A472468356A000BB462 /* frame_node.cpp in Sources */,
 				856EAE262465D4E600938D78 /* geometry_mesh.cpp in Sources */,
 				B3AD1F162464319B00730E61 /* osmesa_context.c in Sources */,
+				8527279C2468456700C04B6A /* render_buffer.cpp in Sources */,
 				85D8EB7A2465DE100024EEB6 /* light.cpp in Sources */,
 				856EAE2B2465D4F100938D78 /* device.cpp in Sources */,
 				B3AD1F3B2464634C00730E61 /* log.cpp in Sources */,
@@ -580,6 +590,8 @@
 				B379B1E82466BED200A434FD /* application_osx.mm in Sources */,
 				B3AD1F282464319B00730E61 /* monitor.c in Sources */,
 				B3524A4924683754000BB462 /* scene_pass_factory.cpp in Sources */,
+				B3524A50246867BB000BB462 /* deferred_render_passes.cpp in Sources */,
+				B3524A5224686E9D000BB462 /* scene_visitor.cpp in Sources */,
 				B3AD1F272464319B00730E61 /* cocoa_monitor.m in Sources */,
 				B3AD1F292464319B00730E61 /* vulkan.c in Sources */,
 				B3AD1F2D2464354100730E61 /* egl_context.c in Sources */,

@@ -116,7 +116,7 @@ struct ScenePassContextImpl: ScenePassContext
 /// Implementation details of scene renderer
 struct SceneRenderer::Impl : ISceneRenderer
 {
-  Device device; //rendering device
+  Device render_device; //rendering device
   TextureList shared_textures; //shared textures
   MaterialList shared_materials; //shared materials
   common::PropertyMap shared_properties; //shared propertiess
@@ -125,16 +125,17 @@ struct SceneRenderer::Impl : ISceneRenderer
   bool need_sort_passes; //passes should be sorted on next rendering iteration
 
   Impl(const Device& device)
-    : device(device)
+    : render_device(device)
     , passes_context(*this)
     , need_sort_passes()
   {
     passes.reserve(RESERVED_PASSES_COUNT);
   }
 
-  PropertyMap& properties() { return shared_properties; }
-  TextureList& textures() { return shared_textures; }
-  MaterialList& materials() { return shared_materials; }
+  PropertyMap& properties() override { return shared_properties; }
+  TextureList& textures() override { return shared_textures; }
+  MaterialList& materials() override { return shared_materials; }
+  Device& device() override { return render_device; }
 };
 
 SceneRenderer::SceneRenderer(const Window& window, const DeviceOptions& options)
@@ -142,6 +143,11 @@ SceneRenderer::SceneRenderer(const Window& window, const DeviceOptions& options)
   Device device(window, options);
 
   impl = std::make_shared<Impl>(device);
+}
+
+Device& SceneRenderer::device() const
+{
+  return impl->render_device;
 }
 
 size_t SceneRenderer::passes_count() const
@@ -155,13 +161,15 @@ namespace
 struct PassResolver
 {
   SceneRenderer& renderer;
+  Device& device;
   int priority;
   std::string root_pass;
   PassArray passes;
   std::unordered_set<std::string> registered_passes;
 
-  PassResolver(SceneRenderer& renderer, const char* root_pass, int priority)
+  PassResolver(SceneRenderer& renderer, Device& device, const char* root_pass, int priority)
     : renderer(renderer)
+    , device(device)
     , priority(priority)
     , root_pass(root_pass)
   {
@@ -209,9 +217,7 @@ struct PassResolver
 
       //create pass
 
-    ScenePassPtr pass = ScenePassFactory::create_pass(name, renderer);
-
-    passes.push_back(PassEntry(root_pass.c_str(), pass, priority));
+    ScenePassPtr pass = ScenePassFactory::create_pass(name, renderer, device);
 
       //create dependencies
 
@@ -223,6 +229,10 @@ struct PassResolver
     {
       add_pass(dep.c_str(), &frame);
     }
+
+      //add pass after dependencies
+
+    passes.push_back(PassEntry(root_pass.c_str(), pass, priority));
   }
 };
 
@@ -234,7 +244,7 @@ void SceneRenderer::add_pass(const char* name, int priority)
 
     //create pass
 
-  PassResolver resolver(*this, name, priority);
+  PassResolver resolver(*this, impl->render_device, name, priority);
 
   resolver.add_pass(name, nullptr);
 
@@ -299,6 +309,8 @@ void SceneRenderer::render(size_t viewports_count, const SceneViewport* viewport
 
   BindingContext renderer_bindings(impl->shared_textures, impl->shared_properties);
   ScenePassContextImpl& context = impl->passes_context;
+  Device& device = impl->render_device;
+  FrameBuffer& window_frame_buffer = device.window_frame_buffer();
 
   for (size_t i=0; i<viewports_count; i++)
   {
@@ -316,12 +328,29 @@ void SceneRenderer::render(size_t viewports_count, const SceneViewport* viewport
 
     context.set_view_node(scene_viewport.camera());
 
+      //set framebuffer
+
+    const Viewport& viewport = scene_viewport.viewport();
+
+    if (!viewport.width && !viewport.height)
+    {
+      window_frame_buffer.reset_viewport();
+    }
+    else
+    {
+      window_frame_buffer.set_viewport(viewport);
+    }
+
       //render passes
 
     for (auto& pass_entry : impl->passes)
     {
       pass_entry.pass->render(impl->passes_context);
     }
+
+      //render frame nodes
+
+    context.root_frame_node().render(context);
   }
 }
 

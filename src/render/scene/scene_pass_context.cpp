@@ -16,6 +16,7 @@ struct ScenePassContext::Impl
   math::mat4f view_tm; //view matrix
   math::mat4f projection_tm; //projection matrix
   math::mat4f view_projection_tm; //projection * view matrix
+  FrameNode root_frame_node; //root frame node
 
   Impl(ISceneRenderer& renderer)
     : renderer(renderer)
@@ -36,6 +37,16 @@ ScenePassContext::ScenePassContext(ISceneRenderer& renderer)
 FrameId ScenePassContext::current_frame_id() const
 {
   return impl->current_frame_id;
+}
+
+Device& ScenePassContext::device() const
+{
+  return impl->renderer.device();
+}
+
+FrameNode& ScenePassContext::root_frame_node() const
+{
+  return impl->root_frame_node;
 }
 
 void ScenePassContext::set_current_frame_id(FrameId id)

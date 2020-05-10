@@ -21,20 +21,22 @@ struct Node::ConcreteUserData : UserData
 };
 
 template <class T>
-void Node::set_user_data(const T& value)
+T& Node::set_user_data(const T& value)
 {
   static const std::type_info& type = typeid(T);
 
   if (UserDataPtr user_data = find_user_data_core(type))
   {
-    auto casted_ptr = static_cast<std::shared_ptr<ConcreteUserData<T>>>(user_data);
+    auto* casted_ptr = static_cast<ConcreteUserData<T>*>(&*user_data);
     casted_ptr->value = value;
-    return;
+    return casted_ptr->value;
   }
 
   auto ptr = std::make_shared<ConcreteUserData<T>>(value);
 
-  set_user_data_core(type, std::move(ptr));
+  set_user_data_core(type, ptr);
+
+  return ptr->value;
 }
 
 template <class T>
@@ -55,7 +57,7 @@ T* Node::find_user_data() const
   if (!user_data)
     return nullptr;
 
-  auto casted_ptr = static_cast<std::shared_ptr<ConcreteUserData<T>>>(user_data);
+  auto* casted_ptr = static_cast<ConcreteUserData<T>*>(&*user_data);
 
   return &casted_ptr->value;
 }

@@ -24,9 +24,11 @@ struct RenderTarget
 {
   RenderTargetType type; //type of the target
   std::unique_ptr<Texture> texture; //texture
+  std::unique_ptr<RenderBuffer> render_buffer; //render_buffer
   bool is_colored; //is this color render target
   size_t mip_level; //mip level for rendering
   TextureLevelInfo level_info; //texture level info
+  RenderBufferInfo render_buffer_info; //texture object
   GLenum attachment; //attachment for this target
 
   RenderTarget()
@@ -63,6 +65,30 @@ struct RenderTarget
 
     texture = std::make_unique<Texture>(in_texture);
   }  
+
+  RenderTarget(const RenderBuffer& in_render_buffer, size_t render_target_index)
+    : type(RenderTargetType_RenderBuffer)
+    , is_colored()
+    , mip_level()
+    , attachment()
+  {
+    switch (in_render_buffer.format())
+    {
+      case PixelFormat_RGBA8:
+      case PixelFormat_RGB16F:
+        is_colored = true;
+        attachment = static_cast<GLenum>(GL_COLOR_ATTACHMENT0 + render_target_index);
+        break;
+      default:
+        engine_check(render_target_index == 0);
+        attachment = GL_DEPTH_ATTACHMENT;
+        break;
+    }
+
+    in_render_buffer.get_info(render_buffer_info);
+
+    render_buffer = std::make_unique<RenderBuffer>(in_render_buffer);
+  }
 };
 
 typedef std::vector<RenderTarget> RenderTargetArray;
@@ -184,6 +210,33 @@ struct FrameBuffer::Impl
           }
           case RenderTargetType_Window:
             throw Exception::format("Can't render both to window and texture simultaneously");
+          default:
+            unimplemented();
+        }
+      }
+
+      if (depth_stencil_target)
+      {
+        engine_check(!depth_stencil_target->is_colored);
+
+        switch (depth_stencil_target->type)
+        {
+          case RenderTargetType_Texture2D:
+          {
+            Texture& texture = *depth_stencil_target->texture;
+
+            engine_check(&texture);
+
+            glFramebufferTexture2D(GL_FRAMEBUFFER, depth_stencil_target->attachment, depth_stencil_target->level_info.target,
+                                   depth_stencil_target->level_info.texture_id, static_cast<GLint>(depth_stencil_target->mip_level));
+
+            break;
+          }
+          case RenderTargetType_RenderBuffer:
+          {
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, depth_stencil_target->attachment, GL_RENDERBUFFER, depth_stencil_target->render_buffer_info.render_buffer_id);
+            break;
+          }
           default:
             unimplemented();
         }
@@ -334,6 +387,11 @@ void FrameBuffer::attach_color_target(const Texture& texture, size_t layer, size
   impl->need_reconfigure = true;  
 }
 
+void FrameBuffer::attach_color_target(const RenderBuffer& render_buffer)
+{
+  unimplemented();
+}
+
 void FrameBuffer::detach_all_color_targets()
 {
   impl->color_targets.clear();
@@ -343,7 +401,28 @@ void FrameBuffer::detach_all_color_targets()
 
 void FrameBuffer::attach_depth_buffer(const Texture& texture, size_t layer, size_t mip_level)
 {
-  unimplemented();
+  engine_check(!impl->depth_stencil_target);
+
+  std::unique_ptr<RenderTarget> new_target = std::make_unique<RenderTarget>(texture, layer, mip_level, 0);
+
+  engine_check(!new_target->is_colored);
+
+  impl->depth_stencil_target.swap(new_target);
+
+  impl->need_reconfigure = true;
+}
+
+void FrameBuffer::attach_depth_buffer(const RenderBuffer& render_buffer)
+{
+  engine_check(!impl->depth_stencil_target);
+
+  std::unique_ptr<RenderTarget> new_target = std::make_unique<RenderTarget>(render_buffer, 0);
+
+  engine_check(!new_target->is_colored);
+
+  impl->depth_stencil_target.swap(new_target);
+
+  impl->need_reconfigure = true;
 }
 
 void FrameBuffer::detach_depth_buffer()

@@ -11,10 +11,12 @@ namespace scene {
 
 using ::engine::scene::Node;
 using ::engine::scene::Camera;
+using low_level::DeviceOptions;
 
 //forward declarations
 class SceneRenderer;
 class ISceneRenderer;
+class FrameNode;
 
 /// Frame identifier
 typedef size_t FrameId;
@@ -29,8 +31,14 @@ class ScenePassContext
     /// Set frame ID
     void set_current_frame_id(FrameId id);
 
+    /// Frame node
+    FrameNode& root_frame_node() const;
+
     /// Bindings
     low_level::BindingContext& bindings() const;
+
+    /// Rendering device
+    low_level::Device& device() const;
 
     /// Frame properties
     common::PropertyMap& properties() const;
@@ -130,7 +138,7 @@ typedef std::shared_ptr<IScenePass> ScenePassPtr;
 class ScenePassFactory
 {
   public:
-    typedef std::function<IScenePass* (SceneRenderer&)> ScenePassCreator;
+    typedef std::function<IScenePass* (SceneRenderer&, low_level::Device&)> ScenePassCreator;
 
     /// Register scene pass
     static void register_scene_pass(const char* pass, const ScenePassCreator& create_fn);
@@ -139,7 +147,7 @@ class ScenePassFactory
     static void unregister_scene_pass(const char* pass);
 
     /// Create scene pass
-    static ScenePassPtr create_pass(const char* pass, SceneRenderer& renderer);
+    static ScenePassPtr create_pass(const char* pass, SceneRenderer& renderer, low_level::Device& device);
 };
 
 /// Scene viewport
@@ -185,6 +193,9 @@ class SceneRenderer
   public:
     /// Constructor
     SceneRenderer(const application::Window& window, const low_level::DeviceOptions& options);
+
+    /// Rendering device
+    low_level::Device& device() const;
 
     /// Passes count
     size_t passes_count() const;

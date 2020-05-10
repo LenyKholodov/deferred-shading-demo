@@ -34,6 +34,7 @@ class DeviceContextImpl;
 struct BufferImpl;
 struct ShaderImpl;
 struct TextureLevelInfo;
+struct RenderBufferInfo;
 struct ProgramParameter;
 
 typedef std::shared_ptr<DeviceContextImpl> DeviceContextPtr;
@@ -234,6 +235,27 @@ class MaterialList
     std::shared_ptr<Impl> impl;
 };
 
+/// Render buffer
+class RenderBuffer
+{
+  public:
+    /// Constructor
+    RenderBuffer(const DeviceContextPtr& context, size_t width, size_t height, PixelFormat format);
+
+    /// Pixel format
+    PixelFormat format() const;
+
+    /// Get render buffer info (internal use only)
+    void get_info(RenderBufferInfo& out_info) const;
+
+    /// Bind renderbuffer for rendering to a context
+    void bind() const;
+
+  private:
+    struct Impl;
+    std::shared_ptr<Impl> impl;
+};
+
 /// Frame buffer
 class FrameBuffer
 {
@@ -259,11 +281,17 @@ class FrameBuffer
     /// Attach texture
     void attach_color_target(const Texture& texture, size_t layer = 0, size_t mip_level = 0);
 
+    /// Attach render buffer
+    void attach_color_target(const RenderBuffer& render_buffer);
+
     /// Clear all color attachments
     void detach_all_color_targets();
 
     /// Attach depth buffer
     void attach_depth_buffer(const Texture& texture, size_t layer = 0, size_t mip_level = 0);
+
+    /// Attach render buffer
+    void attach_depth_buffer(const RenderBuffer& render_buffer);
 
     /// Detach depth buffer
     void detach_depth_buffer();
@@ -577,13 +605,10 @@ class Pass
     size_t primitives_count() const;    
 
     /// Add primitive to a pass
-    void add_primitive(const Primitive& primitive);
-
-    /// Add primitive to a pass
-    void add_primitive(Primitive&& primitive);    
+    void add_primitive(const Primitive& primitive, const math::mat4f& model_tm = math::mat4f(1.0f));
 
     /// Add mesh to a pass
-    void add_mesh(const Mesh& mesh);
+    void add_mesh(const Mesh& mesh, const math::mat4f& model_tm = math::mat4f(1.0f));
 
     /// Remove all primitives from the pass
     /// will be automaticall called after the Pass::render
@@ -596,7 +621,7 @@ class Pass
     void reserve_primitives(size_t count);
 
     /// Render pass
-    void render(const BindingContext* = nullptr);
+    void render(const math::mat4f& view_projection_tm, const BindingContext* = nullptr);
 
   private:
     struct Impl;
@@ -622,6 +647,9 @@ class Device
   public:
     /// Constructor
     Device(const Window& window, const DeviceOptions& options);
+
+    /// Window
+    Window& window() const;
 
     /// Window frame buffer
     FrameBuffer& window_frame_buffer() const;
@@ -667,6 +695,9 @@ class Device
 
     /// Create texture2d
     Texture create_texture2d(size_t width, size_t height, PixelFormat format, size_t mips_count = (size_t)-1);
+
+    /// Create render buffer
+    RenderBuffer create_render_buffer(size_t width, size_t height, PixelFormat format);
 
   private:
     struct Impl;

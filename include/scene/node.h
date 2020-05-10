@@ -63,7 +63,7 @@ class Node : public std::enable_shared_from_this<Node>
     const math::quatf& orientation() const;
 
     /// Set node local orientation
-    void set_orientation(const math::quatf&);    
+    void set_orientation(const math::quatf&);
 
     /// Node scale
     const math::vec3f& scale() const;
@@ -81,7 +81,7 @@ class Node : public std::enable_shared_from_this<Node>
     void traverse(ISceneVisitor&) const;
 
     /// Store user data
-    template <class T> void set_user_data(const T& value);
+    template <class T> T& set_user_data(const T& value);
 
     /// Remove user data
     template <class T> void reset_user_data();
@@ -107,7 +107,7 @@ class Node : public std::enable_shared_from_this<Node>
     template <class T> struct ConcreteUserData;
     typedef std::shared_ptr<UserData> UserDataPtr;
 
-    void set_user_data_core(const std::type_info&, UserDataPtr&&);
+    void set_user_data_core(const std::type_info&, const UserDataPtr&);
     UserDataPtr find_user_data_core(const std::type_info&) const;
 
   private:

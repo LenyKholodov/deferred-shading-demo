@@ -53,7 +53,7 @@ void ScenePassFactory::unregister_scene_pass(const char* pass)
   }
 }
 
-ScenePassPtr ScenePassFactory::create_pass(const char* pass, SceneRenderer& renderer)
+ScenePassPtr ScenePassFactory::create_pass(const char* pass, SceneRenderer& renderer, low_level::Device& device)
 {
   engine_check_null(pass);
 
@@ -64,5 +64,5 @@ ScenePassPtr ScenePassFactory::create_pass(const char* pass, SceneRenderer& rend
   if (!creator)
     throw Exception::format("Pass '%s' has not been registered", pass);
 
-  return std::shared_ptr<IScenePass>((*creator)(renderer));
+  return std::shared_ptr<IScenePass>((*creator)(renderer, device));
 }

@@ -26,6 +26,9 @@ class ISceneRenderer
     /// Shared rendered materials
     virtual low_level::MaterialList& materials() = 0;
 
+    /// Rendering device
+    virtual low_level::Device& device() = 0;
+
   protected:
     virtual ~ISceneRenderer() = default;
 };

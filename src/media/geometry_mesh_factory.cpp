@@ -44,9 +44,9 @@ Mesh MeshFactory::create_box(const char* material, float width, float height, fl
     }
 
     base_vertex[0].position  = (normal + corner1) * size;
-    base_vertex[0].tex_coord = vec2f(1.f, 1.f);
+    base_vertex[0].tex_coord = vec2f(0.f, 1.f);
     base_vertex[1].position  = (normal + corner2) * size;
-    base_vertex[1].tex_coord = vec2f(0.f, 1.f);
+    base_vertex[1].tex_coord = vec2f(1.f, 1.f);
     base_vertex[2].position  = (normal - corner1) * size;
     base_vertex[2].tex_coord = vec2f(1.f, 0.f);
     base_vertex[3].position  = (normal - corner2) * size;
@@ -54,12 +54,12 @@ Mesh MeshFactory::create_box(const char* material, float width, float height, fl
 
     Mesh::index_type* base_index = indices + i * 6;
 
-    base_index[0] = base_vertex_index + 3;
-    base_index[1] = base_vertex_index + 2;
-    base_index[2] = base_vertex_index;
-    base_index[3] = base_vertex_index + 2;
-    base_index[4] = base_vertex_index + 1;
-    base_index[5] = base_vertex_index;
+    base_index[0] = base_vertex_index;
+    base_index[1] = base_vertex_index + 1;
+    base_index[2] = base_vertex_index + 2;
+    base_index[3] = base_vertex_index;
+    base_index[4] = base_vertex_index + 2;
+    base_index[5] = base_vertex_index + 3;
   }
 
   return_value.add_primitive(material, PrimitiveType_TriangleList, vertices, sizeof(vertices) / sizeof(*vertices), indices, sizeof(indices) / sizeof(*indices));
@@ -119,27 +119,27 @@ Mesh MeshFactory::create_sphere(const char* material, float radius)
 
       //north pole triangle
 
-    *current_index++ = 0;
-    *current_index++ = vertex1;
     *current_index++ = vertex2;
+    *current_index++ = vertex1;
+    *current_index++ = 0;    
 
       //south pole triangle
 
-    *current_index++ = 1;
-    *current_index++ = vertex2 + SPHERE_PARALLELS_COUNT - 1;
     *current_index++ = vertex1 + SPHERE_PARALLELS_COUNT - 1;
+    *current_index++ = vertex2 + SPHERE_PARALLELS_COUNT - 1;
+    *current_index++ = 1;    
 
       //north to south meridian triangles
 
     for (size_t j = 0; j < SPHERE_PARALLELS_COUNT - 1; j++)
     {
-      *current_index++ = vertex1 + j;
+      *current_index++ = vertex2 + j + 1;
       *current_index++ = vertex1 + j + 1;
-      *current_index++ = vertex2 + j + 1;
+      *current_index++ = vertex1 + j;      
 
-      *current_index++ = vertex1 + j;
-      *current_index++ = vertex2 + j + 1;
       *current_index++ = vertex2 + j;
+      *current_index++ = vertex2 + j + 1;
+      *current_index++ = vertex1 + j;      
     }
   }
 

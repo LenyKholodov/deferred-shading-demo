@@ -246,7 +246,7 @@ void Node::visit(ISceneVisitor& visitor)
   visitor.visit(*this);
 }
 
-void Node::set_user_data_core(const std::type_info& type, UserDataPtr&& user_data)
+void Node::set_user_data_core(const std::type_info& type, const UserDataPtr& user_data)
 {
   if (!user_data)
   {

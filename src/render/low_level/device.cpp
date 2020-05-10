@@ -31,12 +31,14 @@ struct VertexArrayObject
 struct Device::Impl
 {
   DeviceContextPtr context; //rendering context
+  Window window; //application window
   FrameBuffer window_frame_buffer; //window frame buffer
   std::unique_ptr<Program> default_program; //default program
   std::unique_ptr<VertexArrayObject> vertex_array_object; //dummy implementation to make OpenGL 4.1 happy; should be integrated with input layouts
 
   Impl(const Window& window, const DeviceOptions& options)
     : context(std::make_shared<DeviceContextImpl>(window, options))
+    , window(window)
     , window_frame_buffer(context, window)
   {
     context->make_current();
@@ -90,6 +92,11 @@ Device::Device(const Window& window, const DeviceOptions& options)
     "}\n";
 
   impl->default_program = std::make_unique<Program>(create_program_from_source("default", DEFAULT_PROGRAM_SOURCE_CODE));
+}
+
+Window& Device::window() const
+{
+  return impl->window;
 }
 
 FrameBuffer& Device::window_frame_buffer() const
@@ -243,7 +250,7 @@ Primitive Device::create_plane(const Material& material)
     {math::vec3f(1.f, 1.f, 0), math::vec3f(0.f, 1.f, 0.f), math::vec4f(1.f, 1.f, 1.f, 1.0f), math::vec2f(1, 1)},
     {math::vec3f(1.f, -1.f, 0), math::vec3f(0.f, 1.f, 0.f), math::vec4f(1.f, 1.f, 1.f, 1.0f), math::vec2f(1, 0)},
   };
-  IndexBuffer::index_type indices [] = {0, 1, 2, 0, 2, 3};
+  IndexBuffer::index_type indices [] = {2, 1, 0, 3, 2, 0};
 
   VertexBuffer vertex_buffer = create_vertex_buffer(4);
   IndexBuffer index_buffer = create_index_buffer(6);
@@ -252,4 +259,9 @@ Primitive Device::create_plane(const Material& material)
   index_buffer.set_data(0, 6, indices);
 
   return Primitive(material, PrimitiveType::PrimitiveType_TriangleList, vertex_buffer, index_buffer, 0, 2, 0);
+}
+
+RenderBuffer Device::create_render_buffer(size_t width, size_t height, PixelFormat format)
+{
+  return RenderBuffer(impl->context, width, height, format);
 }

@@ -17,7 +17,7 @@ struct TestPass : IScenePass
     engine_log_debug(__FUNCTION__);
   }
 
-  static IScenePass* create(SceneRenderer& renderer)
+  static IScenePass* create(SceneRenderer& renderer, Device&)
   {
     return new TestPass(renderer);
   }

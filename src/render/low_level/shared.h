@@ -164,6 +164,17 @@ struct TextureLevelInfo
   }
 };
 
+/// Render buffer info
+struct RenderBufferInfo
+{
+  GLuint render_buffer_id; //render buffer object
+
+  RenderBufferInfo()
+    : render_buffer_id()
+  {
+  }
+};
+
 /// Program parameter
 struct ProgramParameter 
 {

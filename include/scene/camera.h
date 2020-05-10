@@ -44,7 +44,7 @@ class PerspectiveCamera : public Camera
     typedef std::shared_ptr<PerspectiveCamera> Pointer;
 
     /// Create camera
-    Pointer create();
+    static Pointer create();
 
     /// Camera horizontal fov angle
     const math::anglef& fov_x() const;

@@ -89,7 +89,19 @@ struct InputLayout
   }
 };
 
-typedef std::vector<Primitive> PrimitiveArray;
+struct PassPrimitive: public Primitive
+{
+  math::mat4f model_tm;
+
+  PassPrimitive(const Primitive& primitive, const math::mat4f& tm)
+    : Primitive(primitive)
+    , model_tm(tm)
+  {
+
+  }
+};
+
+typedef std::vector<PassPrimitive> PrimitiveArray;
 
 }
 
@@ -98,6 +110,7 @@ struct Pass::Impl
 {
   DeviceContextPtr context; //device context
   PrimitiveArray primitives; //primitives
+  common::PropertyMap dynamic_properties; //dynamic property map
   Program program; //program for this pass
   FrameBuffer frame_buffer; //frame buffer for this pass
   math::vec4f clear_color; //clear color  
@@ -120,7 +133,7 @@ struct Pass::Impl
     primitives.reserve(PRIMITIVES_RESERVE_SIZE);
   }
 
-  void render(const BindingContext* parent_bindings)
+  void render(const math::mat4f& view_projection_tm, const BindingContext* parent_bindings)
   {
     engine_check(sizeof(IndexBuffer::index_type) == 2); //change glDrawElements call for different sizes
 
@@ -145,7 +158,8 @@ struct Pass::Impl
 
       //update binding context
 
-    BindingContext bindings(parent_bindings, properties, textures);
+    BindingContext static_bindings(parent_bindings, properties, textures);
+    BindingContext bindings(&static_bindings, dynamic_properties);
 
       //draw primitives
 
@@ -153,7 +167,7 @@ struct Pass::Impl
 
     for (auto& primitive : primitives)
     {
-      render_primitive(primitive, program, input_layout, bindings);
+      render_primitive(primitive, view_projection_tm, program, input_layout, bindings);
     }
 
       //clear pass
@@ -161,11 +175,17 @@ struct Pass::Impl
     primitives.clear();
   }
 
-  void render_primitive(Primitive& primitive, const Program& program, InputLayout& input_layout, BindingContext& parent_bindings)
+  void render_primitive(PassPrimitive& primitive, const math::mat4f& view_projection_tm, const Program& program, InputLayout& input_layout, BindingContext& parent_bindings)
   {
       //setup bindings
 
     BindingContext bindings(&parent_bindings, primitive.material);
+
+    math::mat4f mvp = view_projection_tm * primitive.model_tm;
+
+    math::vec4f p = mvp * math::vec4f(0, 0, 0, 1);
+
+    dynamic_properties.set("MVP", mvp);
 
       //setup shader parameters and textures
 
@@ -360,6 +380,9 @@ struct Pass::Impl
     if (clear_flags & Clear_Depth)   gl_flags |= GL_DEPTH_BUFFER_BIT;
     if (clear_flags & Clear_Stencil) gl_flags |= GL_STENCIL_BUFFER_BIT;
 
+    if (clear_flags & Clear_Depth)
+      glDepthMask(true);
+
     if (clear_flags)
     {
       glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
@@ -379,7 +402,9 @@ struct Pass::Impl
       glDepthFunc(get_gl_compare_mode(depth_stencil_state.depth_compare_mode));
     }
     else
+    {
       glDisable(GL_DEPTH_TEST);
+    }
 
     glDepthMask(depth_stencil_state.depth_write_enable);
 
@@ -442,6 +467,16 @@ struct Pass::Impl
 Pass::Pass(const DeviceContextPtr& context, const FrameBuffer& frame_buffer, const Program& program)
   : impl(std::make_shared<Impl>(context, frame_buffer, program))
 {
+}
+
+PropertyMap& Pass::properties() const
+{
+  return impl->properties;
+}
+
+TextureList& Pass::textures() const
+{
+  return impl->textures;
 }
 
 void Pass::set_frame_buffer(const FrameBuffer& frame_buffer)
@@ -509,21 +544,16 @@ size_t Pass::primitives_count() const
   return impl->primitives.size();
 }
 
-void Pass::add_primitive(const Primitive& primitive)
+void Pass::add_primitive(const Primitive& primitive, const math::mat4f& model_tm)
 {
-  impl->primitives.push_back(primitive);
-}
-
-void Pass::add_primitive(Primitive&& primitive)
-{
-  impl->primitives.emplace_back(primitive);
+  impl->primitives.push_back(PassPrimitive(primitive, model_tm));
 }
 
 /// Add mesh to a pass
-void Pass::add_mesh(const Mesh& mesh)
+void Pass::add_mesh(const Mesh& mesh, const math::mat4f& model_tm)
 {
   for (size_t i = 0, count = mesh.primitives_count(); i < count; i++)
-    add_primitive(mesh.primitive(i));
+    add_primitive(mesh.primitive(i), model_tm);
 }
 
 void Pass::remove_all_primitives()
@@ -541,7 +571,7 @@ size_t Pass::primitives_capacity() const
   return impl->primitives.capacity();
 }
 
-void Pass::render(const BindingContext* bindings)
+void Pass::render(const math::mat4f& view_projection_tm, const BindingContext* bindings)
 {
-  impl->render(bindings);
+  impl->render(view_projection_tm, bindings);
 }
