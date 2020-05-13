@@ -81,24 +81,28 @@ void SceneViewport::set_textures(const low_level::TextureList& textures)
 namespace
 {
 
+struct PassEntry;
+typedef std::shared_ptr<PassEntry> PassEntryPtr;
+typedef std::vector<PassEntryPtr> PassArray;
+
 struct PassEntry
 {
   ScenePassPtr pass; //scene pass
-  std::string root_name; //pass name
+  std::string name; //self pass name
   int priority; //priority of pass rendering
+  PassArray dependencies; //dependent scene passes
+  FrameId rendered_frame_id; //rendered frame ID
 
   PassEntry(const char* name, const ScenePassPtr& pass, int priority)
     : pass(pass)
-    , root_name(name)
+    , name(name)
     , priority(priority)
+    , rendered_frame_id()
   {
   }
 
   bool operator < (const PassEntry& other) const { return priority < other.priority; }
 };
-
-//TODO: use wrapper to avoid copying of strings
-typedef std::vector<PassEntry> PassArray;
 
 struct ScenePassContextImpl: ScenePassContext
 {
@@ -123,14 +127,35 @@ struct SceneRenderer::Impl : ISceneRenderer
   common::PropertyMap shared_properties; //shared propertiess
   ScenePassContextImpl passes_context; //scene rendering context
   PassArray passes; //scene rendering passes
-  bool need_sort_passes; //passes should be sorted on next rendering iteration
 
   Impl(const Device& device)
     : render_device(device)
     , passes_context(*this)
-    , need_sort_passes()
   {
     passes.reserve(RESERVED_PASSES_COUNT);
+  }
+
+  void render_pass(PassEntryPtr& pass_entry)
+  {
+    FrameId current_frame_id = passes_context.current_frame_id();
+
+    if (pass_entry->rendered_frame_id >= current_frame_id)
+      return;
+
+      //render dependencies
+
+    for (auto& dep_pass_entry : pass_entry->dependencies)
+    {
+      render_pass(dep_pass_entry);
+    }
+
+      //render pass
+
+    pass_entry->pass->render(passes_context);
+
+      //update frame info
+
+    pass_entry->rendered_frame_id = current_frame_id;
   }
 
   PropertyMap& properties() override { return shared_properties; }
@@ -167,59 +192,80 @@ struct PassResolver
   int priority;
   std::string root_pass;
   PassArray passes;
-  std::unordered_set<std::string> registered_passes;
+  const PassArray& existing_passes;
 
-  PassResolver(SceneRenderer& renderer, Device& device, const char* root_pass, int priority)
+  PassResolver(SceneRenderer& renderer, const PassArray& existing_passes, Device& device, const char* root_pass, int priority)
     : renderer(renderer)
     , device(device)
     , priority(priority)
     , root_pass(root_pass)
+    , existing_passes(existing_passes)
   {
     passes.reserve(RESERVED_PASSES_COUNT);
   }
 
   struct StackFrame
   {
+    PassEntryPtr pass;
     const char* name;    
     StackFrame* prev;
 
-    StackFrame(const char* name, StackFrame* prev)
-      : name(name)
+    StackFrame(const char* name, const PassEntryPtr& pass, StackFrame* prev)
+      : pass(pass)
+      , name(name)
       , prev(prev)
     {
     }
   };
 
-  void add_pass(const char* name, StackFrame* parent)
+  static PassEntryPtr find_pass(const char* name, const PassArray& passes)
   {
-    StackFrame frame(name, parent);
-
-      //check loops
-
-    if (registered_passes.count(name))
+    for (const auto& pass_entry : passes)
     {
-      std::string stack;
-
-      for (StackFrame* it=&frame; it; it=it->prev)
-      {
-        if (stack.empty())
-        {
-          stack = it->name; 
-        }
-        else
-        {
-          stack = engine::common::format("%s -> %s", it->name, stack.c_str());
-        }
-      }
-
-      throw Exception::format("Cant' create pass '%s' due to pass depenency loop: %s", root_pass.c_str(), stack.c_str());
+      if (pass_entry->name == name)
+        return pass_entry;
     }
 
-    registered_passes.insert(name);    
+    return nullptr;
+  }
+
+  static bool check_loop(const char* name, StackFrame* parent)
+  {
+    for (StackFrame* it=parent; it; it=it->prev)
+    {
+      if (!strcmp(it->name, name))
+        return true;
+    }
+
+    return false;
+  }
+
+  static void sort(PassArray& passes)
+  {
+    std::stable_sort(passes.begin(), passes.end(), [](const auto& ptr1, const auto& ptr2) { return *ptr1 < *ptr2; });
+  }
+
+  PassEntryPtr create_pass(const char* name, StackFrame* parent)
+  {
+      //check loops
+
+    if (check_loop(name, parent))
+    {
+      std::string stack = name;
+
+      for (StackFrame* it=parent; it; it=it->prev)
+      {
+        stack = engine::common::format("%s -> %s", it->name, stack.c_str());
+      }
+
+      throw Exception::format("Can't create pass '%s' due to pass depenency loop: %s", root_pass.c_str(), stack.c_str());
+    }
 
       //create pass
 
     ScenePassPtr pass = ScenePassFactory::create_pass(name, renderer, device);
+    PassEntryPtr entry = std::make_shared<PassEntry>(name, pass, priority);
+    StackFrame frame(name, entry, parent);    
 
       //create dependencies
 
@@ -232,9 +278,50 @@ struct PassResolver
       add_pass(dep.c_str(), &frame);
     }
 
-      //add pass after dependencies
+    passes.push_back(entry);
 
-    passes.push_back(PassEntry(root_pass.c_str(), pass, priority));
+      //add pass to parent
+
+    if (parent && parent->pass)
+    {
+      parent->pass->dependencies.push_back(entry);
+
+      //TODO: optimize sorting
+
+      sort(parent->pass->dependencies);
+    }
+
+    return entry;
+  }
+
+  PassEntryPtr add_pass(const char* name, StackFrame* parent)
+  {
+    if (!parent)
+    {
+      engine_log_debug("Resolving scene pass '%s'", name);
+    }
+    else
+    {
+      engine_log_debug("...creating scene pass '%s' for '%s'", name, root_pass.c_str());
+    }
+
+      //check if we have already created such pass
+
+    PassEntryPtr pass = find_pass(name, existing_passes);
+
+    if (!pass)
+    {
+      pass = find_pass(name, passes);
+    }
+
+      //create new pass
+
+    if (!pass)
+    {
+      pass = create_pass(name, parent);
+    }
+
+    return pass;
   }
 };
 
@@ -246,15 +333,15 @@ void SceneRenderer::add_pass(const char* name, int priority)
 
     //create pass
 
-  PassResolver resolver(*this, impl->render_device, name, priority);
+  PassResolver resolver(*this, impl->passes, impl->render_device, name, priority);
 
   resolver.add_pass(name, nullptr);
 
     //register pass
 
-  impl->need_sort_passes = true;
-
   impl->passes.insert(impl->passes.end(), resolver.passes.begin(), resolver.passes.end());
+
+  PassResolver::sort(impl->passes);
 }
 
 void SceneRenderer::remove_pass(const char* name)
@@ -262,8 +349,8 @@ void SceneRenderer::remove_pass(const char* name)
   if (!name)
     return;
 
-  impl->passes.erase(std::remove_if(impl->passes.begin(), impl->passes.end(), [&](auto& pass_entry) {
-    return pass_entry.root_name == name;
+  impl->passes.erase(std::remove_if(impl->passes.begin(), impl->passes.end(), [&](const auto& pass_entry) {
+    return pass_entry->name == name;
   }), impl->passes.end());
 }
 
@@ -280,15 +367,6 @@ void SceneRenderer::render(size_t viewports_count, const SceneViewport* viewport
     //update frame info
 
   impl->passes_context.set_current_frame_id(impl->passes_context.current_frame_id() + 1);
-
-    //sort passes
-
-  if (impl->need_sort_passes)
-  {
-    std::sort(impl->passes.begin(), impl->passes.end());
-
-    impl->need_sort_passes = false;
-  }
 
     //render passes
 
@@ -347,7 +425,7 @@ void SceneRenderer::render(size_t viewports_count, const SceneViewport* viewport
 
     for (auto& pass_entry : impl->passes)
     {
-      pass_entry.pass->render(impl->passes_context);
+      impl->render_pass(pass_entry);
     }
 
       //render frame nodes

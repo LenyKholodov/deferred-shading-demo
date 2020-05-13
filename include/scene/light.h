@@ -47,6 +47,9 @@ class Light : public Node
     void visit(ISceneVisitor&) override;
 
   private:
+    virtual void invalidate_projection() {}
+
+  private:
     struct Impl;
     std::unique_ptr<Impl> impl;
 };
@@ -72,12 +75,18 @@ class SpotLight : public Light
     /// Set light cone attenuation exponent
     void set_exponent(float exponent);
 
+    /// Get projection matrix
+    const math::mat4f& projection_matrix() const;
+
   protected:
     /// Constructor
     SpotLight();
 
     /// Visit node
-    void visit(ISceneVisitor&) override;    
+    void visit(ISceneVisitor&) override;
+
+  private:
+    void invalidate_projection() override;
 
   private:
     struct Impl;

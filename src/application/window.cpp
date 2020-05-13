@@ -148,6 +148,7 @@ struct Window::Impl
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true); 
+    glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, false);
 
       //if width and height was not requested, create full screen window
     if (!width && !height)

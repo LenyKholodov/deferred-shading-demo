@@ -1,15 +1,11 @@
+#include "shared.h"
+
 #include <scene/camera.h>
 
 #include <common/exception.h>
 
 using namespace engine::common;
 using namespace engine::scene;
-
-///
-/// Constants
-///
-
-static constexpr float EPS = 1e-6f;
 
 ///
 /// Camera
@@ -96,22 +92,7 @@ PerspectiveCamera::Pointer PerspectiveCamera::create()
 
 void PerspectiveCamera::recompute_projection_matrix()
 {
-  float width  = 2.f * tan(impl->fov_x * 0.5f) * impl->z_near,
-        height = 2.f * tan(impl->fov_y * 0.5f) * impl->z_near,
-        depth  = impl->z_far - impl->z_near;
-
-  engine_check(fabs(width) >= EPS);
-  engine_check(fabs(height) >= EPS);
-  engine_check(fabs(depth) >= EPS);
-
-  math::mat4f tm;
-
-  tm[0] = math::vec4f(-2.0f * impl->z_near / width, 0, 0, 0);
-  tm[1] = math::vec4f(0, 2.0f * impl->z_near / height, 0, 0);
-  tm[2] = math::vec4f(0, 0, (impl->z_far + impl->z_near) / depth, -2.0f * impl->z_near * impl->z_far / depth);
-  tm[3] = math::vec4f(0, 0, 1, 0);
-
-  set_projection_matrix(tm);
+  set_projection_matrix(compute_perspective_proj_tm(impl->fov_x, impl->fov_y, impl->z_near, impl->z_far));
 }
 
 void PerspectiveCamera::set_fov_x(const math::anglef& fov_x)

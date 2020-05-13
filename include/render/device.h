@@ -608,13 +608,22 @@ class Pass
     TextureList& textures() const;
 
     /// Number of added primitives
-    size_t primitives_count() const;    
+    size_t primitives_count() const;
+
+    //// Default primitive properties
+    static common::PropertyMap& default_primitive_properties();
 
     /// Add primitive to a pass
-    void add_primitive(const Primitive& primitive, const math::mat4f& model_tm = math::mat4f(1.0f));
+    void add_primitive(
+      const Primitive& primitive,
+      const math::mat4f& model_tm = math::mat4f(1.0f),
+      const common::PropertyMap& properties = default_primitive_properties());
 
     /// Add mesh to a pass
-    void add_mesh(const Mesh& mesh, const math::mat4f& model_tm = math::mat4f(1.0f));
+    void add_mesh(
+      const Mesh& mesh,
+      const math::mat4f& model_tm = math::mat4f(1.0f),
+      const common::PropertyMap& properties = default_primitive_properties());
 
     /// Remove all primitives from the pass
     /// will be automaticall called after the Pass::render
@@ -701,6 +710,9 @@ class Device
 
     /// Create texture2d
     Texture create_texture2d(size_t width, size_t height, PixelFormat format, size_t mips_count = 100);
+
+    /// Load texture2d
+    Texture create_texture2d(const char* image_path, size_t mips_count = 100);
 
     /// Create render buffer
     RenderBuffer create_render_buffer(size_t width, size_t height, PixelFormat format);

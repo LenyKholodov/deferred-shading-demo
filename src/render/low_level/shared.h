@@ -2,6 +2,7 @@
 
 #include <render/device.h>
 #include <application/window.h>
+#include <media/image.h>
 #include <common/exception.h>
 #include <common/log.h>
 #include <common/string.h>

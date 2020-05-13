@@ -92,10 +92,12 @@ struct InputLayout
 struct PassPrimitive: public Primitive
 {
   math::mat4f model_tm;
+  PropertyMap properties;
 
-  PassPrimitive(const Primitive& primitive, const math::mat4f& tm)
+  PassPrimitive(const Primitive& primitive, const math::mat4f& tm, const PropertyMap& properties)
     : Primitive(primitive)
     , model_tm(tm)
+    , properties(properties)
   {
 
   }
@@ -198,7 +200,8 @@ struct Pass::Impl
   {
       //setup bindings
 
-    BindingContext bindings(&parent_bindings, primitive.material);
+    BindingContext material_bindings(&parent_bindings, primitive.material);
+    BindingContext bindings(&material_bindings, primitive.properties);
 
     math::mat4f mvp = view_projection_tm * primitive.model_tm;
 
@@ -563,16 +566,22 @@ size_t Pass::primitives_count() const
   return impl->primitives.size();
 }
 
-void Pass::add_primitive(const Primitive& primitive, const math::mat4f& model_tm)
+PropertyMap& Pass::default_primitive_properties()
 {
-  impl->primitives.push_back(PassPrimitive(primitive, model_tm));
+  static common::PropertyMap instance;
+  return instance;
+}
+
+void Pass::add_primitive(const Primitive& primitive, const math::mat4f& model_tm, const PropertyMap& properties)
+{
+  impl->primitives.push_back(PassPrimitive(primitive, model_tm, properties));
 }
 
 /// Add mesh to a pass
-void Pass::add_mesh(const Mesh& mesh, const math::mat4f& model_tm)
+void Pass::add_mesh(const Mesh& mesh, const math::mat4f& model_tm, const PropertyMap& properties)
 {
   for (size_t i = 0, count = mesh.primitives_count(); i < count; i++)
-    add_primitive(mesh.primitive(i), model_tm);
+    add_primitive(mesh.primitive(i), model_tm, properties);
 }
 
 void Pass::remove_all_primitives()

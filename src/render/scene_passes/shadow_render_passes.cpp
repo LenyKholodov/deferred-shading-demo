@@ -57,6 +57,13 @@ class ShadowPass : IScenePass
         render_shadow_map(light, context);
       }
 
+        //enumerate projectiles and build shadows for them
+
+      for (auto& projectile : visitor.projectiles())
+      {
+        render_shadow_map(projectile, context);
+      }
+
         //clear data
 
       visitor.reset();
@@ -65,28 +72,36 @@ class ShadowPass : IScenePass
   private:
     void render_shadow_map(const SpotLight::Pointer& light, ScenePassContext& context)
     {
+      render_shadow_map(static_cast<Node&>(*light), light->projection_matrix(), context);
+    }
+
+    void render_shadow_map(const Projectile::Pointer& projectile, ScenePassContext& context)
+    {
+      render_shadow_map(static_cast<Node&>(*projectile), projectile->projection_matrix(), context);
+    }    
+
+    void render_shadow_map(Node& node, const math::mat4f& projection_tm, ScenePassContext& context)
+    {
         //create shadow data
 
-      Shadow* shadow = light->find_user_data<Shadow>();
+      Shadow* shadow = node.find_user_data<Shadow>();
 
       if (!shadow)
       {
-        shadow = &light->set_user_data(Shadow(context.device(), shadow_program, SHADOW_MAP_SIZE));
+        shadow = &node.set_user_data(Shadow(context.device(), shadow_program, SHADOW_MAP_SIZE));
       }
 
         //configure view
 
       PropertyMap pass_properties = shadow->shadow_pass.properties();
 
-      math::mat4f view_tm = inverse(light->world_tm());
-      math::mat4f projection_tm = compute_projection_matrix(*light);
+      math::mat4f view_tm = inverse(node.world_tm());
       math::mat4f view_projection_tm = projection_tm * view_tm;
-      math::vec3f world_view_position = light->world_tm() * math::vec3f(0.0f);
+      math::vec3f world_view_position = node.world_tm() * math::vec3f(0.0f);
 
       pass_properties.set("viewMatrix", view_tm);
       pass_properties.set("worldViewPosition", world_view_position);
       pass_properties.set("projectionMatrix", projection_tm);
-      //pass_properties.set("viewProjectionMatrix", view_projection_tm);
 
         //update shadow matrix
 
@@ -120,34 +135,8 @@ class ShadowPass : IScenePass
       shadow_pass.add_mesh(renderable_mesh->mesh, mesh.world_tm());
     }
 
-    static math::mat4f compute_projection_matrix(const SpotLight& light)
-    {
-      float z_near = 1.f;
-      float z_far  = light.range();    
-      math::anglef angle = light.angle();
-      float width  = 2.f * tan(angle) * z_near,
-            height = 2.f * tan(angle) * z_near,
-            depth  = z_far - z_near;
-
-      static constexpr float EPS = 1e-6f;            
-
-      engine_check(fabs(width) >= EPS);
-      engine_check(fabs(height) >= EPS);
-      engine_check(fabs(depth) >= EPS);
-
-      math::mat4f tm;
-
-      tm[0] = math::vec4f(-2.0f * z_near / width, 0, 0, 0);
-      tm[1] = math::vec4f(0, 2.0f * z_near / height, 0, 0);
-      tm[2] = math::vec4f(0, 0, (z_far + z_near) / depth, -2.0f * z_near * z_far / depth);
-      tm[3] = math::vec4f(0, 0, 1, 0);
-
-      return tm;
-    }
-
   private:
     low_level::Program shadow_program;
-
     SceneVisitor visitor;
 };
 

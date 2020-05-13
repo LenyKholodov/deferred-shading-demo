@@ -3,6 +3,7 @@
 #include <scene/camera.h>
 #include <scene/mesh.h>
 #include <scene/light.h>
+#include <scene/projectile.h>
 
 #include <application/window.h>
 
@@ -21,6 +22,7 @@ namespace passes {
 typedef std::vector<engine::scene::Mesh::Pointer> MeshArray;
 typedef std::vector<engine::scene::PointLight::Pointer> PointLightArray;
 typedef std::vector<engine::scene::SpotLight::Pointer> SpotLightArray;
+typedef std::vector<engine::scene::Projectile::Pointer> ProjectileArray;
 
 /// Rendering mesh data
 struct RenderableMesh
@@ -43,7 +45,7 @@ struct Shadow
   math::mat4f shadow_tm;
 
   Shadow(engine::render::low_level::Device& device, const low_level::Program& program, size_t shadow_map_size)
-    : shadow_texture(device.create_texture2d(shadow_map_size, shadow_map_size, low_level::PixelFormat_D24))
+    : shadow_texture(device.create_texture2d(shadow_map_size, shadow_map_size, low_level::PixelFormat_D24, 1))
     , shadow_pass(device.create_pass(program))
     , shadow_frame_buffer(device.create_frame_buffer())
     , shadow_tm(1.0f)
@@ -55,6 +57,33 @@ struct Shadow
 
     shadow_pass.set_frame_buffer(shadow_frame_buffer);
     shadow_pass.set_depth_stencil_state(low_level::DepthStencilState(true, true, low_level::CompareMode_Less));
+  }
+};
+
+/// Projectile render data
+struct RenderableProjectile
+{
+  low_level::Texture texture;
+  low_level::Material material;
+  low_level::Primitive plane;
+  common::PropertyMap properties;
+
+  RenderableProjectile(const char* image_name, const low_level::Texture& shadow_texture, engine::render::low_level::Device& device)
+    : texture(device.create_texture2d(image_name))
+    , plane(device.create_plane(material))
+  {
+    texture.generate_mips();
+    texture.set_min_filter(low_level::TextureFilter_LinearMipLinear);
+    texture.set_mag_filter(low_level::TextureFilter_Linear);
+
+    low_level::TextureList textures = material.textures();
+
+    textures.insert("projectileTexture", texture);
+    textures.insert("shadowTexture", shadow_texture);
+
+    float tex_size_step = 1.0f / shadow_texture.width();
+
+    properties.set("shadowMapPixelSize", math::vec2f(tex_size_step));
   }
 };
 
@@ -74,6 +103,9 @@ class SceneVisitor : private engine::scene::ISceneVisitor
     /// Spot lights
     const SpotLightArray& spot_lights() const;
 
+    /// Projectiles
+    const ProjectileArray& projectiles() const;
+
     /// Reset results
     void reset();
 
@@ -84,6 +116,7 @@ class SceneVisitor : private engine::scene::ISceneVisitor
     void visit(engine::scene::Mesh&) override;
     void visit(engine::scene::SpotLight&) override;
     void visit(engine::scene::PointLight&) override;
+    void visit(engine::scene::Projectile&) override;
 
   private:
     struct Impl;

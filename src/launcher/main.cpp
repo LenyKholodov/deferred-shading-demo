@@ -7,6 +7,7 @@
 #include <scene/node.h>
 #include <scene/light.h>
 #include <scene/mesh.h>
+#include <scene/projectile.h>
 #include <application/application.h>
 #include <application/window.h>
 #include <common/exception.h>
@@ -38,7 +39,7 @@ const math::vec3f LIGHTS_ATTENUATION(1, 0.75, 0.25);
 const size_t LIGHTS_COUNT = 32;
 const float LIGHTS_POSITION_RADIUS = 30.f;
 const float LIGHTS_MIN_INTENSITY = 0.25f;
-const float LIGHTS_MAX_INTENSITY = 0.75f;
+const float LIGHTS_MAX_INTENSITY = 1.25f;
 const float LIGHTS_MIN_RANGE = 10.f;
 const float LIGHTS_MAX_RANGE = 50.f;
 const size_t MESHES_COUNT = 100;
@@ -228,10 +229,33 @@ int main(void)
     spot_light->set_angle(math::degree(30.f));
     spot_light->set_exponent(0.8f);
     spot_light->set_position(math::vec3f(-10.f, 10.f, 0.f));
-//    spot_light->set_orientation(math::to_quat(math::degree(30.f), math::degree(0.f), math::degree(0.f)));
-    //spot_light->set_orientation(math::to_quat(math::degree(90.f), math::degree(0.f), math::degree(0.f)));    
     spot_light->bind_to_parent(*lights_parent);
     spot_light->world_look_to(math::vec3f(0.0f), math::vec3f(0, 1, 0));
+
+    media::geometry::Mesh spot_light_helper_mesh = media::geometry::MeshFactory::create_box("mtl1", 0.5f, 0.5f, 0.5f);
+    scene::Mesh::Pointer spot_light_helper = scene::Mesh::create();
+
+    spot_light_helper->set_mesh(spot_light_helper_mesh);
+    spot_light_helper->bind_to_parent(*spot_light);
+
+      //projectile
+
+    scene::PerspectiveProjectile::Pointer projectile = scene::PerspectiveProjectile::create();
+
+    projectile->set_image("media/textures/projectile.png");
+    projectile->set_z_near(1.f);
+    projectile->set_z_far(100.f);
+    projectile->set_fov_x(math::degree(FOV_X));
+    projectile->set_fov_y(math::degree(FOV_X / window_ratio));
+    projectile->set_position(math::vec3f(10.f, 30.f, 0.f));
+    projectile->bind_to_parent(*scene_root);
+    projectile->world_look_to(math::vec3f(0.0f), math::vec3f(0, 1, 0));
+
+    media::geometry::Mesh projectile_helper_mesh = media::geometry::MeshFactory::create_sphere("mtl1", .15f);
+    scene::Mesh::Pointer projectile_helper = scene::Mesh::create();
+
+    projectile_helper->set_mesh(projectile_helper_mesh);
+    projectile_helper->bind_to_parent(*projectile);
 
       //render setup
 
@@ -241,27 +265,17 @@ int main(void)
     Device render_device = scene_renderer.device();
 
     scene_renderer.add_pass("Deferred Lighting");
+    scene_renderer.add_pass("Projectile Maps Rendering");
 
       //resources creation
 
-    media::image::Image diffuse_map ("media/textures/brickwall_diffuse.jpg");
-    media::image::Image normal_map ("media/textures/brickwall_normal.jpg");
-    media::image::Image specular_map ("media/textures/brickwall_specular.jpg");
-
-    Texture model_diffuse_texture = render_device.create_texture2d(diffuse_map.width(), diffuse_map.height(), PixelFormat_RGBA8);
-    Texture model_normal_texture = render_device.create_texture2d(normal_map.width(), normal_map.height(), PixelFormat_RGBA8);
-    Texture model_specular_texture = render_device.create_texture2d(specular_map.width(), specular_map.height(), PixelFormat_RGBA8);
+    Texture model_diffuse_texture = render_device.create_texture2d("media/textures/brickwall_diffuse.jpg");
+    Texture model_normal_texture = render_device.create_texture2d("media/textures/brickwall_normal.jpg");
+    Texture model_specular_texture = render_device.create_texture2d("media/textures/brickwall_specular.jpg");
 
     model_diffuse_texture.set_min_filter(TextureFilter_LinearMipLinear);
     model_normal_texture.set_min_filter(TextureFilter_LinearMipLinear);
     model_specular_texture.set_min_filter(TextureFilter_LinearMipLinear);
-
-    model_diffuse_texture.set_data(0, 0, 0, diffuse_map.width(), diffuse_map.height(), diffuse_map.bitmap());
-    model_diffuse_texture.generate_mips();
-    model_normal_texture.set_data(0, 0, 0, normal_map.width(), normal_map.height(), normal_map.bitmap());
-    model_normal_texture.generate_mips();
-    model_specular_texture.set_data(0, 0, 0, specular_map.width(), specular_map.height(), specular_map.bitmap());
-    model_specular_texture.generate_mips();
 
     model_diffuse_texture.set_min_filter(TextureFilter_LinearMipLinear);
     model_normal_texture.set_min_filter(TextureFilter_LinearMipLinear);
@@ -324,12 +338,12 @@ int main(void)
         light->set_position(pos);
       }
 
-      //spot_light->set_intensity((1.0f + cos(time * 2)) / 2.0f * 10.0f);
-      spot_light->set_intensity(10.0f);
+      spot_light->set_intensity((1.0f + cos(time * 2)) / 2.0f * 10.0f + 0.25f);
 
-      //spot_light->set_orientation(math::quatf());
-      spot_light->set_position(math::vec3f(cos(time * 0.5) * 20, 20.f, sin(time * 0.5) * 20));
-      //spot_light->world_look_to(math::vec3f(0.0f), math::vec3f(0, 1, 0));
+      spot_light->set_position(math::vec3f(cos(time * 0.5) * 10, 10.f, sin(time * 0.5) * 10));
+
+      projectile->set_position(math::vec3f(sin(time * 0.3) * 10, 5.f, cos(time * 0.6) * 8));
+      projectile->set_intensity((1.0f + cos(time)) / 2.0f * 10.0f + 0.25f);
 
         //render scene
 
@@ -345,158 +359,6 @@ int main(void)
 
       return TIMEOUT_MS;
     });
-
-#if 0
-      //render setup
-
-    DeviceOptions render_options;
-
-    //render_options.debug = false;
-
-    Device render_device(window, render_options);
-    FrameBuffer shadow_frame_buffer = render_device.create_frame_buffer();
-    FrameBuffer g_buffer_frame_buffer = render_device.create_frame_buffer();
-    FrameBuffer frame_buffer = render_device.window_frame_buffer();
-
-    Texture shadow_texture = render_device.create_texture2d(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE, PixelFormat_D24, 1);
-
-    shadow_texture.set_min_filter(TextureFilter_Point);
-
-    shadow_frame_buffer.attach_depth_buffer(shadow_texture);
-
-    shadow_frame_buffer.reset_viewport();
-
-    int g_buffer_width = window.frame_buffer_width();
-    int g_buffer_height = window.frame_buffer_height();
-
-    Texture positions_texture = render_device.create_texture2d(g_buffer_width, g_buffer_height, PixelFormat_RGB16F, 1);
-    Texture normals_texture = render_device.create_texture2d(g_buffer_width, g_buffer_height, PixelFormat_RGB16F, 1);
-    Texture albedo_texture = render_device.create_texture2d(g_buffer_width, g_buffer_height, PixelFormat_RGBA8, 1);
-    Texture specular_texture = render_device.create_texture2d(g_buffer_width, g_buffer_height, PixelFormat_RGBA8, 1);
-    RenderBuffer g_buffer_depth = render_device.create_render_buffer(g_buffer_width, g_buffer_height, PixelFormat_D24);
-
-    positions_texture.set_min_filter(TextureFilter_Point);
-    normals_texture.set_min_filter(TextureFilter_Point);
-    albedo_texture.set_min_filter(TextureFilter_Point);
-    specular_texture.set_min_filter(TextureFilter_Point);
-
-    g_buffer_frame_buffer.attach_color_target(positions_texture);
-    g_buffer_frame_buffer.attach_color_target(normals_texture);
-    g_buffer_frame_buffer.attach_color_target(albedo_texture);
-    g_buffer_frame_buffer.attach_color_target(specular_texture);
-    g_buffer_frame_buffer.attach_depth_buffer(g_buffer_depth);
-
-    g_buffer_frame_buffer.reset_viewport();
-
-    Program shadow_program = render_device.create_program_from_file("media/shaders/shadow.glsl");
-
-    Pass shadow_pass = render_device.create_pass(shadow_program);
-
-    shadow_pass.set_frame_buffer(shadow_frame_buffer);
-
-    shadow_pass.set_depth_stencil_state(DepthStencilState(true, true, CompareMode_Less));
-
-    Program program = render_device.create_program_from_file("media/shaders/phong_gbuffer.glsl");
-
-    Pass pass = render_device.create_pass(program);
-
-    pass.set_frame_buffer(g_buffer_frame_buffer);
-
-    pass.set_depth_stencil_state(DepthStencilState(true, true, CompareMode_Less));
-
-    Pass pass2 = render_device.create_pass(program);
-
-    pass2.set_frame_buffer(g_buffer_frame_buffer);
-
-    pass2.set_depth_stencil_state(DepthStencilState(true, true, CompareMode_Less));
-
-    pass2.set_clear_flags(Clear_None);
-
-    Program lighting_program = render_device.create_program_from_file("media/shaders/lighting.glsl");
-
-    Pass light_pass = render_device.create_pass(lighting_program);
-
-    light_pass.set_depth_stencil_state(DepthStencilState(false, false, CompareMode_AlwaysPass));
-
-    light_pass.set_clear_flags(Clear_None);
-
-    Primitive plane = render_device.create_plane(mtl2);
-
-    PropertyMap view_properties;
-
-    view_properties.set("shininess", 50.f);
-
-      //main loop
-
-    app.main_loop([&](){
-      if (window.should_close())
-        app.exit();
-
-        //update scene
-      lights_parent->set_orientation(math::to_quat(math::degree(0.f), math::degree((float)Application::time()), math::degree(0.f)));
-
-        //viewport adjustments according to a window size
-
-      render_device.window_frame_buffer().reset_viewport();
-
-        //passes
-
-      int width = window.frame_buffer_width(), height = window.frame_buffer_height();
-      float ratio = width / (float) height;
-      
-      mat4x4 m, p, mvp;
-
-      mat4x4_identity(m);
-      mat4x4_translate(m, -0.5f, 0.f, 0.f);
-      mat4x4_rotate_Y(m, m, (float) Application::time() / 2);
-      mat4x4_rotate_Z(m, m, (float) Application::time());
-      mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-      mat4x4_mul(mvp, p, m);
-
-      math::mat4f mvp_transposed(&mvp[0][0]);
-
-      view_properties.set("MVP", transpose(mvp_transposed));
-
-      BindingContext frame_bindings(view_properties);
-
-      shadow_pass.add_mesh(mesh);
-
-      shadow_pass.render(&frame_bindings);
-
-      pass.add_mesh(mesh);
-
-      pass.render(&frame_bindings);
-
-      mat4x4_identity(m);
-      mat4x4_translate(m, 0.5f, 0.f, 0.f);
-      mat4x4_rotate_Y(m, m, (float) Application::time() / 2);
-      mat4x4_rotate_Z(m, m, (float) Application::time());
-      mat4x4_rotate_Z(m, m, (float) Application::time());
-      mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-      mat4x4_mul(mvp, p, m);
-
-      mvp_transposed = math::mat4f(&mvp[0][0]);
-      view_properties.set("MVP", transpose(mvp_transposed));
-
-      pass2.add_mesh(mesh2);
-
-      pass2.render(&frame_bindings);
-
-      lighting_program.bind();
-
-      light_pass.add_primitive(plane);
-
-      light_pass.render(&frame_bindings);
-
-        //image presenting
-
-      window.swap_buffers();
-
-      static const size_t TIMEOUT_MS = 10;
-
-      return TIMEOUT_MS;
-    });
-#endif
 
     engine_log_info("Exiting from application...");
 

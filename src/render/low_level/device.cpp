@@ -114,6 +114,17 @@ Texture Device::create_texture2d(size_t width, size_t height, PixelFormat format
   return Texture(impl->context, width, height, 1, format, mips_count);
 }
 
+Texture Device::create_texture2d(const char* image_path, size_t mips_count)
+{
+  media::image::Image image(image_path);
+  Texture texture = create_texture2d(image.width(), image.height(), PixelFormat_RGBA8, mips_count);
+
+  texture.set_data(0, 0, 0, image.width(), image.height(), image.bitmap());
+  //texture.generate_mips();
+
+  return texture;
+}
+
 VertexBuffer Device::create_vertex_buffer(size_t count)
 {
   return VertexBuffer(impl->context, count);

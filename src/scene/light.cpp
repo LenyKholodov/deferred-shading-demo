@@ -1,3 +1,5 @@
+#include "shared.h"
+
 #include <scene/light.h>
 
 using namespace engine::scene;
@@ -61,6 +63,8 @@ const math::vec3f& Light::attenuation() const
 void Light::set_range(float range)
 {
   impl->range = range;
+
+  invalidate_projection();
 }
 
 float Light::range() const
@@ -100,6 +104,14 @@ struct SpotLight::Impl
 {
   math::anglef angle; //cone angle
   float exponent; //attenuation exponent
+  math::mat4f projection_tm; //projection matrix
+  bool need_update_proj_tm; //projection matrix should be updated
+
+  Impl()
+    : projection_tm(1.0f)
+
+  {
+  }
 };
 
 SpotLight::SpotLight()
@@ -112,9 +124,15 @@ SpotLight::Pointer SpotLight::create()
   return SpotLight::Pointer(new SpotLight);
 }
 
+void SpotLight::invalidate_projection()
+{
+  impl->need_update_proj_tm = true;
+}
+
 void SpotLight::set_angle(const math::anglef& angle)
 {
   impl->angle = angle;
+  impl->need_update_proj_tm = true;
 }
 
 void SpotLight::set_exponent(float exponent)
@@ -130,6 +148,22 @@ const math::anglef& SpotLight::angle() const
 float SpotLight::exponent() const
 {
   return impl->exponent;
+}
+
+const math::mat4f& SpotLight::projection_matrix() const
+{
+  if (!impl->need_update_proj_tm)
+    return impl->projection_tm;
+
+  static constexpr float Z_NEAR = 1.0f;
+
+  math::anglef fov_x = impl->angle * 2, fov_y = fov_x;
+
+  impl->projection_tm = compute_perspective_proj_tm(fov_x, fov_y, Z_NEAR, range());
+
+  impl->need_update_proj_tm = false;
+
+  return impl->projection_tm;
 }
 
 void SpotLight::visit(ISceneVisitor& visitor)

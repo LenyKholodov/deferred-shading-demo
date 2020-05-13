@@ -34,6 +34,8 @@
 		B3524A4E24685689000BB462 /* test_scene_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3524A4D24685689000BB462 /* test_scene_pass.cpp */; };
 		B3524A50246867BB000BB462 /* deferred_render_passes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3524A4F246867BB000BB462 /* deferred_render_passes.cpp */; };
 		B3524A5224686E9D000BB462 /* scene_visitor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B3524A5124686E9D000BB462 /* scene_visitor.cpp */; };
+		B362EBC0246C02100094E772 /* projectile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B362EBBF246C02100094E772 /* projectile.cpp */; };
+		B362EBC3246C1E310094E772 /* projectile_render_pass.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B362EBC2246C1E310094E772 /* projectile_render_pass.cpp */; };
 		B379B1DC2465F05A00A434FD /* buffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B379B1DB2465F05A00A434FD /* buffer.cpp */; };
 		B379B1DE246604A600A434FD /* shader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B379B1DD246604A600A434FD /* shader.cpp */; };
 		B379B1E02466286300A434FD /* property_map.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B379B1DF2466286300A434FD /* property_map.cpp */; };
@@ -111,7 +113,7 @@
 		85FC3D7524645D8C0023D0E2 /* quat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = quat.h; sourceTree = "<group>"; };
 		85FC3D7624645D8C0023D0E2 /* utility.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = utility.h; sourceTree = "<group>"; };
 		85FC3D7724645D8C0023D0E2 /* vector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vector.h; sourceTree = "<group>"; };
-		B327D3FE2469315F007B590D /* scene_render.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = scene_render.h; path = ../../include/render/scene_render.h; sourceTree = "<group>"; };
+		B327D3FD24692F01007B590D /* scene_render.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = scene_render.h; path = include/render/scene_render.h; sourceTree = "<group>"; };
 		B3524A42246826AF000BB462 /* scene_renderer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = scene_renderer.cpp; path = src/render/scene/scene_renderer.cpp; sourceTree = "<group>"; };
 		B3524A4424682DAA000BB462 /* scene_pass_context.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = scene_pass_context.cpp; path = src/render/scene/scene_pass_context.cpp; sourceTree = "<group>"; };
 		B3524A4624683569000BB462 /* frame_node.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = frame_node.cpp; path = src/render/scene/frame_node.cpp; sourceTree = "<group>"; };
@@ -120,6 +122,9 @@
 		B3524A4D24685689000BB462 /* test_scene_pass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = test_scene_pass.cpp; path = src/render/scene_passes/test_scene_pass.cpp; sourceTree = "<group>"; };
 		B3524A4F246867BB000BB462 /* deferred_render_passes.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = deferred_render_passes.cpp; path = src/render/scene_passes/deferred_render_passes.cpp; sourceTree = "<group>"; };
 		B3524A5124686E9D000BB462 /* scene_visitor.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = scene_visitor.cpp; path = src/render/scene_passes/scene_visitor.cpp; sourceTree = "<group>"; };
+		B362EBBF246C02100094E772 /* projectile.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = projectile.cpp; path = src/scene/projectile.cpp; sourceTree = "<group>"; };
+		B362EBC1246C021C0094E772 /* projectile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = projectile.h; path = include/scene/projectile.h; sourceTree = "<group>"; };
+		B362EBC2246C1E310094E772 /* projectile_render_pass.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = projectile_render_pass.cpp; path = src/render/scene_passes/projectile_render_pass.cpp; sourceTree = "<group>"; };
 		B379B1DB2465F05A00A434FD /* buffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = buffer.cpp; path = src/render/low_level/buffer.cpp; sourceTree = "<group>"; };
 		B379B1DD246604A600A434FD /* shader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = shader.cpp; path = src/render/low_level/shader.cpp; sourceTree = "<group>"; };
 		B379B1DF2466286300A434FD /* property_map.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = property_map.cpp; path = src/common/property_map.cpp; sourceTree = "<group>"; };
@@ -227,7 +232,7 @@
 		856EAE122465D3E900938D78 /* render */ = {
 			isa = PBXGroup;
 			children = (
-				B327D3FE2469315F007B590D /* scene_render.h */,
+				B327D3FD24692F01007B590D /* scene_render.h */,
 				856EAE142465D45500938D78 /* device.h */,
 			);
 			name = render;
@@ -269,6 +274,7 @@
 		85D8EB6D2465D5900024EEB6 /* scene */ = {
 			isa = PBXGroup;
 			children = (
+				B362EBC1246C021C0094E772 /* projectile.h */,
 				85D8EB6F2465D5AC0024EEB6 /* camera.h */,
 				85D8EB702465D5AC0024EEB6 /* light.h */,
 				85D8EB712465D5AC0024EEB6 /* mesh.h */,
@@ -280,6 +286,7 @@
 		85D8EB722465D5BD0024EEB6 /* scene */ = {
 			isa = PBXGroup;
 			children = (
+				B362EBBF246C02100094E772 /* projectile.cpp */,
 				85D8EB752465DAE70024EEB6 /* camera.cpp */,
 				85D8EB792465DE100024EEB6 /* light.cpp */,
 				85D8EB772465DCF10024EEB6 /* mesh.cpp */,
@@ -376,6 +383,7 @@
 		B3524A4C2468567A000BB462 /* scene_passes */ = {
 			isa = PBXGroup;
 			children = (
+				B362EBC2246C1E310094E772 /* projectile_render_pass.cpp */,
 				B3FB10FA2468B3AB00F5E2C3 /* shadow_render_passes.cpp */,
 				B3524A5124686E9D000BB462 /* scene_visitor.cpp */,
 				B3524A4F246867BB000BB462 /* deferred_render_passes.cpp */,
@@ -571,6 +579,7 @@
 				B379B1EA2466CF7A00A434FD /* texture.cpp in Sources */,
 				85D8EB742465D5CA0024EEB6 /* node.cpp in Sources */,
 				856EAE252465D4E600938D78 /* geometry_mesh_factory.cpp in Sources */,
+				B362EBC0246C02100094E772 /* projectile.cpp in Sources */,
 				B3524A472468356A000BB462 /* frame_node.cpp in Sources */,
 				856EAE262465D4E600938D78 /* geometry_mesh.cpp in Sources */,
 				B3AD1F162464319B00730E61 /* osmesa_context.c in Sources */,
@@ -597,6 +606,7 @@
 				B3AD1F282464319B00730E61 /* monitor.c in Sources */,
 				B3524A4924683754000BB462 /* scene_pass_factory.cpp in Sources */,
 				B3524A50246867BB000BB462 /* deferred_render_passes.cpp in Sources */,
+				B362EBC3246C1E310094E772 /* projectile_render_pass.cpp in Sources */,
 				B3524A5224686E9D000BB462 /* scene_visitor.cpp in Sources */,
 				B3AD1F272464319B00730E61 /* cocoa_monitor.m in Sources */,
 				B3AD1F292464319B00730E61 /* vulkan.c in Sources */,

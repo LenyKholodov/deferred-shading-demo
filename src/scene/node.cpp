@@ -38,9 +38,17 @@ struct Node::Impl
 
   /// Mark transformations as dirty
   void invalidate_matrix()
-  {
+  {    
     is_local_tm_dirty = true;
-    is_world_tm_dirty = true;
+
+    if (!is_world_tm_dirty)
+    {
+      is_world_tm_dirty = true;
+
+      for (Node::Pointer it=first_child; it; it=it->impl->next_child)
+        if (!it->impl->is_world_tm_dirty)
+          it->impl->invalidate_matrix();
+    }
   }
 
   void bind_to_parent(Node* new_parent)
@@ -227,7 +235,7 @@ void Node::look_to(const math::vec3f& target_point, const math::vec3f& up)
   view[2] = z;
   view    = transpose(view);  
   
-  math::quatf rotation = normalize(to_quat(view));  
+  math::quatf rotation = -normalize(to_quat(view));  
 
   set_orientation(rotation * impl->orientation);
 }
@@ -236,7 +244,7 @@ void Node::world_look_to(const math::vec3f& target_point, const math::vec3f& up)
 {
   math::mat4f inv_world_tm = inverse(world_tm());
   math::vec3f local_target_point = inv_world_tm * target_point;
-  math::vec3f local_up = inv_world_tm * up;
+  math::vec3f local_up = math::vec3f(inv_world_tm * math::vec4f(up, 0));
 
   look_to(local_target_point, local_up);
 }

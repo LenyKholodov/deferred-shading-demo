@@ -15,6 +15,7 @@ void main()
 
 #shader pixel
 #version 410 core
+#define DEBUG 0
 
 uniform sampler2D positionTexture;
 uniform sampler2D normalTexture;
@@ -30,12 +31,11 @@ const float DIFFUSE_AMOUNT = 1.0; // diffuse light multiplier
 const float SPECULAR_AMOUNT = 1.0; // specular light multiplier
 const float SHININESS_NORMALIZER = 1000.0f; // workaround for RGBA8 precision for shininess
 
-const vec2 ShadowMapPixelSize = vec2(1.0 / 1024, 1.0 / 1024);
-
 #define MAX_POINT_LIGHTS 32
 #define MAX_SPOT_LIGHTS 2
 
 uniform vec3 worldViewPosition;
+uniform vec2 shadowMapPixelSize;
 
 uniform vec3 spotLightPositions[MAX_SPOT_LIGHTS];
 uniform vec3 spotLightDirections[MAX_SPOT_LIGHTS];
@@ -65,7 +65,7 @@ vec3 ComputeSpecularColor(const in vec3 normal, const in vec3 lightDir, const in
 
 float OffsetLookup(vec4 shadowTexCoord, vec2 offset)
 {
-  float shadowDepth = texture(shadowTexture, shadowTexCoord.xy + offset * ShadowMapPixelSize * shadowTexCoord.w).x + 0.0001;
+  float shadowDepth = texture(shadowTexture, shadowTexCoord.xy + offset * shadowMapPixelSize * shadowTexCoord.w).x + 0.0001;
 
   if (shadowDepth < shadowTexCoord.z)
   {
@@ -124,7 +124,7 @@ void main()
   {
     float lightAngle = spotLightAngles[i];    
     vec3 lightPosition = spotLightPositions[i];
-    vec3 lightSelfDirection = spotLightDirections[i];
+    vec3 lightSelfDirection = -normalize(spotLightDirections[i].xyz);
     vec3 lightColor = spotLightColors[i];      
     vec3 lightAttenuation = spotLightAttenuations[i];
     float lightExponent = spotLightExponents[i];
@@ -135,6 +135,7 @@ void main()
 
     if (theta < lightAngle)
     {
+
       float distance = length(lightPosition - position);
       float attenuation = min(1.0, lightRange / (lightAttenuation.x + lightAttenuation.y * distance + lightAttenuation.z * (distance * distance))); 
 
@@ -168,7 +169,7 @@ void main()
   
   outColor = vec4(color, 1.0);
   
-#if 0
+#if DEBUG
   // debug output
   if (texCoord.x < 0.5 && texCoord.y < 0.5)
   {

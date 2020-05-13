@@ -38,6 +38,8 @@ struct GBufferPass : IScenePass
       , g_buffer_depth(device.create_render_buffer(g_buffer_width, g_buffer_height, PixelFormat_D24))
       , g_buffer_frame_buffer(device.create_frame_buffer())
     {
+      engine_log_debug("Creating G-Buffer...");
+
       shared_frames.insert("g_buffer", frame);
 
       shared_textures.insert("positionTexture", positions_texture);
@@ -172,6 +174,7 @@ struct DeferredLightingPass : IScenePass
     {
       deps.push_back("Shadow Maps Rendering");
       deps.push_back("G-Buffer");
+      deps.push_back("Projectile Maps Rendering");
     }
 
     void render(ScenePassContext& context)
@@ -237,7 +240,7 @@ struct DeferredLightingPass : IScenePass
         //setup lights
 
       common::PropertyMap properties = frame.properties();
-
+      
       static constexpr size_t MAX_LIGHTS_COUNT = 32; //TODO: batch light rendering in several passes
 
       point_light_positions.reserve(MAX_LIGHTS_COUNT);
@@ -288,7 +291,7 @@ struct DeferredLightingPass : IScenePass
         //setup lights
 
       common::PropertyMap properties = frame.properties();
-
+      
       static constexpr size_t MAX_LIGHTS_COUNT = 2; //TODO: batch light rendering in several passes
 
       spot_light_positions.reserve(MAX_LIGHTS_COUNT);
@@ -311,7 +314,7 @@ struct DeferredLightingPass : IScenePass
           intensity = 0;
 
         math::vec3f position = light->world_tm() * math::vec3f(0, 0, 0, 1.0f);
-        math::vec3f direction = normalize(math::vec3f(light->world_tm() * math::vec3f(0, 0, 1.0f, 0)));
+        math::vec3f direction = normalize(math::vec3f(light->world_tm() * math::vec4f(0, 0, 1.0f, 0)));
         math::vec3f color = light->light_color() * intensity;
         math::vec3f attenuation = light->attenuation();
         float range = light->range();
@@ -325,6 +328,10 @@ struct DeferredLightingPass : IScenePass
           //TODO: texture arrays binding to shader program
         deferred_lighting_pass.textures().remove("shadowTexture");
         deferred_lighting_pass.textures().insert("shadowTexture", shadow->shadow_texture);
+
+        float tex_size_step = 1.0f / shadow->shadow_texture.width();
+
+        deferred_lighting_pass.properties().set("shadowMapPixelSize", math::vec2f(tex_size_step));
 
         frame.add_dependency(shadow->shadow_frame);
         
@@ -345,7 +352,7 @@ struct DeferredLightingPass : IScenePass
         spot_light_colors.push_back(0.0f);
         spot_light_attenuations.push_back(math::vec3f(1.0f));
         spot_light_ranges.push_back(0.f);
-        spot_light_angles.push_back(M_PI);
+        spot_light_angles.push_back(0);
         spot_light_exponents.push_back(1.0f);
         spot_lights_shadow_matrices.push_back(0.0f);
       }

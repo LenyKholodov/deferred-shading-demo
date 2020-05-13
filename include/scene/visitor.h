@@ -11,6 +11,8 @@ class Mesh;
 class Light;
 class SpotLight;
 class PointLight;
+class Projectile;
+class PerspectiveProjectile;
 
 /// Very simple scene visitor with hard dependencies from scene classes
 class ISceneVisitor
@@ -23,6 +25,8 @@ class ISceneVisitor
     virtual void visit(Light&) {}
     virtual void visit(SpotLight&) {}
     virtual void visit(PointLight&) {}
+    virtual void visit(Projectile&) {}
+    virtual void visit(PerspectiveProjectile&) {}
 
   protected:
     virtual ~ISceneVisitor() = default;
